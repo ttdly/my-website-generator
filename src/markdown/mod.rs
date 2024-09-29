@@ -1,14 +1,13 @@
-
-use std::fmt::Error;
 use pulldown_cmark::{Options, Parser};
 use pulldown_cmark::html::push_html;
+use anyhow::Result;
 pub mod core;
 
-pub fn parser(content: &str) -> Result<String, Error> {
+pub fn parser(content: &str) -> Result<String> {
   let options = Options::all();
   let parser = Parser::new_ext(content,options);
   let parser = core::custom_code_parser::CustomCodeParser::new(parser);
-  let mut html = String::new();
+  let mut html = String::with_capacity(content.len() * 4);
   push_html(&mut html, parser);
   Ok(html)
 }

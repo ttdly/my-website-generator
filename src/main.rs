@@ -1,4 +1,11 @@
+use std::env;
 pub mod markdown;
+pub mod page;
+
 fn main() {
-    println!("Hello, world!");
+    let args: Vec<String> = env::args().collect();
+    print!("{}", args.len());
+    for i in args{
+        println!("{}", i);
+    }
 }

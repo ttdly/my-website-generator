@@ -29,8 +29,13 @@ for CustomCodeParser<'parser_event, T> {
         _ => break,
       }
     }
-    let code_html =
-      code_highlight::parser::highlight(&code,&language).unwrap_or_else(|e| e.to_string());
+    let code_html:String = match code_highlight::parser::highlight(&code,&language) {
+      Ok(html) => html,
+      Err(e) => {
+        println!("Parse code block error: {:?}", e.to_string());
+        std::process::exit(10);
+      },
+    };
     Some(Event::Html(code_html.into()))
   }
 }

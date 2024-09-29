@@ -1,12 +1,13 @@
 use syntect::easy::HighlightLines;
-use syntect::Error;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{append_highlighted_html_for_styled_line, IncludeBackground};
 use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
+use anyhow::Result;
+
 use super::lang_transform;
 
-pub fn highlight(code: &str, lang: &str) -> Result<String, Error>{
+pub fn highlight(code: &str, lang: &str) -> Result<String>{
   let ps = SyntaxSet::load_defaults_newlines();
   let ts = ThemeSet::load_defaults();
   let theme = &ts.themes["InspiredGitHub"];
