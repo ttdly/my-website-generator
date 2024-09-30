@@ -1,0 +1,3 @@
+.markdown-body div[class^="language-"] pre code span.line{
+    display: block;
+}
