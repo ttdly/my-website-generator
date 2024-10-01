@@ -20,7 +20,8 @@ pub fn highlight(code: &str, lang: &str) -> Result<String>{
     }
   };
   let mut highlighter = HighlightLines::new(syntax, theme);
-  let mut output = String::from(format!("<div class=\"language-{}\"><pre><code>", lang));
+  let mut output = String::from(
+    format!("<div class=\"language-{}\"><button class=\"copy\"></button><pre><code>", lang));
   for line in LinesWithEndings::from(code) {
     let line = line.trim_end_matches("\n");
     let regions = highlighter.highlight_line(line, &ps)?;

@@ -139,11 +139,18 @@ fn create_context(json_object: &Value) -> Result<Context> {
 
 #[cfg(test)]
 mod tests {
+  use fs_extra::copy_items;
+  use fs_extra::dir::CopyOptions;
   use crate::page::action2md_html::convert;
 
   #[test]
   fn it_works() {
     convert(r"C:\Users\26216\Desktop\git.txt", r"C:\Users\26216\Desktop", r"C:\Users\26216\Desktop")
       .expect("TODO: panic message");
+    let mut options = CopyOptions::new(); // Initialize default values for CopyOptions
+    options.copy_inside = true;
+    options.overwrite = true;
+    copy_items(&["resources/templates/assets"], r"C:\Users\26216\Desktop", &options)
+      .expect("aaa");
   }
 }
