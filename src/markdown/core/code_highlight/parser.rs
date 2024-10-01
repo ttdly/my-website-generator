@@ -23,7 +23,6 @@ pub fn highlight(code: &str, lang: &str) -> Result<String>{
   let mut output = String::from(
     format!("<div class=\"language-{}\"><button class=\"copy\"></button><pre><code>", lang));
   for line in LinesWithEndings::from(code) {
-    let line = line.trim_end_matches("\n");
     let regions = highlighter.highlight_line(line, &ps)?;
     output.push_str("<span class=\"line\">");
     append_highlighted_html_for_styled_line(
