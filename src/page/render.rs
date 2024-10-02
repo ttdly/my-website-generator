@@ -1,8 +1,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use anyhow::{anyhow, Result};
+use chrono::{DateTime, Local};
 use gray_matter::engine::YAML;
-use gray_matter::Matter;
+use gray_matter::{Matter, Pod};
 use serde_json::Value;
 use tera::{Context, Tera};
 
@@ -106,37 +107,30 @@ fn create_context_from_action(json_object: &Value) -> Result<Context> {
     Some(title) => context.insert("title", title),
     None => ()
   }
-
-  // match json_object["discussion"]["created_at"].as_str(){
-  //   Some(create_at) =>
-  //     front_matter_string.push_str(&format!("create_at: {}\n", create_at)),
-  //   None => ()
-  // }
-  // match json_object["discussion"]["updated_at"].as_str(){
-  //   Some(update_at) =>
-  //     front_matter_string.push_str(&format!("updated_at: {}\n", update_at)),
-  //   None => ()
-  // }
-  // match json_object["discussion"]["comments"].as_u64(){
-  //   Some(comments) =>
-  //     front_matter_string.push_str(&format!("comments: {}\n", comments)),
-  //   None => ()
-  // }
-  // match json_object["discussion"]["locked"].as_bool(){
-  //   Some(locked) =>
-  //     front_matter_string.push_str(&format!("locked: {}\n", locked)),
-  //   None => ()
-  // }
-  // match json_object["discussion"]["labels"].as_array() {
-  //   Some(labels) => {
-  //     let mut labels_yaml = String::new();
-  //     for label in labels {
-  //       labels_yaml.push_str(&format!("\n  -{}", label["name"].as_str().unwrap()));
-  //     }
-  //     front_matter_string.push_str(&format!("labels: {}\n", labels_yaml));
-  //   }
-  //   None => ()
-  // }
+  match json_object["discussion"]["created_at"].as_str(){
+    Some(create_at) =>
+      context.insert("create_at", &parse_date_str(String::from(create_at))?),
+    None => ()
+  }
+  match json_object["discussion"]["updated_at"].as_str(){
+    Some(update_at) =>
+      context.insert("update_at", &parse_date_str(String::from(update_at))?),
+    None => ()
+  }
+  match json_object["discussion"]["comments"].as_u64() {
+    Some(comments) =>
+      context.insert("comments", &comments),
+    None => ()
+  }
+  match json_object["discussion"]["labels"].as_array() {
+    Some(labels) => {
+      let labels_str:Vec<&str> = labels.iter()
+        .map( |label_obj| label_obj["name"].as_str().unwrap_or_else(|| "unknown"))
+        .collect::<Vec<&str>>();
+      context.insert("labels", &labels_str);
+    }
+    None => ()
+  }
   Ok(context)
 }
 
@@ -151,7 +145,15 @@ pub fn from_markdown_file(markdown_file_path: &str, save_html_file_path: &str) -
     None => return Err(anyhow!("can not find markdown file")),
   };
   let markdown_content_html = crate::markdown::parser(&markdown_content)?;
-  let mut context = create_context_from_md(&markdown_content)?;
+  let matter = Matter::<YAML>::new();
+  let result = matter.parse(&markdown_content);
+  let data = match result.data.as_ref() {
+    Some(data) => data,
+    None => return Err(anyhow!("gray matter parse data is null")),
+  };
+  let locked = data["locked"].as_bool().unwrap_or_else(|_| false);
+  if locked { return Ok(()) }
+  let mut context = create_context_from_md(data)?;
   context.insert("blog_body", &markdown_content_html);
   render_html(save_html_file_path, context, number)
 }
@@ -168,18 +170,33 @@ pub fn from_markdown_dir(markdown_dir_path: &str, save_html_file_path: &str) -> 
   };
   Ok(())
 }
-fn create_context_from_md(markdown_content: &str) -> Result<Context> {
+
+fn create_context_from_md(data: &Pod) -> Result<Context> {
   let mut context = Context::new();
-  let matter = Matter::<YAML>::new();
-  let result = matter.parse(markdown_content);
-  let data = match result.data.as_ref() {
-    Some(data) => data,
-    None => return Err(anyhow!("gray matter parse data is null")),
-  };
   context.insert("title", &data["title"].as_string()?);
+  context.insert("create_at", &parse_date_str(data["create_at"].as_string()?)?);
+  match data["labels"].as_vec() {
+    Ok(labels) => {
+      let labels_str:Vec<String> = labels.iter()
+        .map(|x| x.as_string().unwrap_or_else(|e| e.to_string()))
+        .collect::<Vec<String>>();
+      context.insert("labels", &labels_str);
+    },
+    Err(_) => ()
+  };
+  context.insert("update_at", &parse_date_str(data["update_at"].as_string()?)?);
+  match data["update_at"].as_string() {
+    Ok(update_at) => {
+      let update_at = parse_date_str(update_at)?;
+      context.insert("update_at", &update_at);
+    },
+    Err(_) => ()
+  }
   Ok(context)
 }
-
+fn parse_date_str(string: String) -> Result<String> {
+  Ok(DateTime::parse_from_rfc3339(&string)?.with_timezone(&Local).format("%Y年%m月%d日").to_string())
+}
 #[cfg(test)]
 mod tests {
   use fs_extra::copy_items;
@@ -188,12 +205,12 @@ mod tests {
 
   #[test]
   fn test_from_action() {
-    from_action(r"C:\Users\26216\Desktop\git.txt", r"C:\Users\26216\Desktop", r"C:\Users\26216\Desktop")
+    from_action(r"C:\Users\26216\Desktop\git.txt", r"D:\Code\web\test_page", r"D:\Code\web\test_page")
       .expect("TODO: panic message");
     let mut options = CopyOptions::new(); // Initialize default values for CopyOptions
     options.copy_inside = true;
     options.overwrite = true;
-    copy_items(&["resources/templates/assets"], r"C:\Users\26216\Desktop", &options)
+    copy_items(&["resources/templates/assets"], r"D:\Code\web\test_page", &options)
       .expect("aaa");
   }
   #[test]
