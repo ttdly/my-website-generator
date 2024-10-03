@@ -18,7 +18,7 @@
     <ul>
       {% if labels | length > 0 %}
         {% for label in labels %}
-      <li><a class="label-link">{{ label }}</a></li>
+      <li><a class="label-link" href="/labels/{{ label }}.html">{{ label }}</a></li>
         {% endfor %}
       {% endif %}
     </ul>

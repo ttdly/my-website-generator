@@ -1,10 +1,11 @@
-use std::fs;
-use std::path::{Path, PathBuf};
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Local};
 use gray_matter::engine::YAML;
 use gray_matter::{Matter, Pod};
 use serde_json::Value;
+use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
 use tera::{Context, Tera};
 
 pub fn from_action(github_event_file_path: &str,
@@ -151,7 +152,8 @@ pub fn from_markdown_file(markdown_file_path: &str, save_html_file_path: &str) -
     Some(data) => data,
     None => return Err(anyhow!("gray matter parse data is null")),
   };
-  let locked = data["locked"].as_bool().unwrap_or_else(|_| false);
+  let data = data.as_hashmap()?;
+  let locked = data.get("locked").unwrap_or(&Pod::Boolean(false)).as_bool()?;
   if locked { return Ok(()) }
   let mut context = create_context_from_md(data)?;
   context.insert("blog_body", &markdown_content_html);
@@ -171,27 +173,36 @@ pub fn from_markdown_dir(markdown_dir_path: &str, save_html_file_path: &str) -> 
   Ok(())
 }
 
-fn create_context_from_md(data: &Pod) -> Result<Context> {
+fn create_context_from_md(data: HashMap<String, Pod>) -> Result<Context> {
   let mut context = Context::new();
-  context.insert("title", &data["title"].as_string()?);
-  context.insert("create_at", &parse_date_str(data["create_at"].as_string()?)?);
-  match data["labels"].as_vec() {
-    Ok(labels) => {
+  match data.get("title") {
+    Some(title) => context.insert("title", &title.as_string()?),
+    None => ()
+  }
+  match data.get("create_at") {
+    Some(create_at) =>
+      context.insert("create_at", &parse_date_str(create_at.as_string()?)?),
+    None => ()
+  }
+  match data.get("comments") {
+    Some(comments) => context.insert("comments", &comments.as_i64()?),
+    None => ()
+  }
+  match data.get("update_at") {
+    Some(update_at) =>
+      context.insert("update_at", &parse_date_str(update_at.as_string()?)?),
+    None => ()
+  }
+  match data.get("labels") {
+    Some(labels) => {
+      let labels = labels.as_vec()?;
       let labels_str:Vec<String> = labels.iter()
         .map(|x| x.as_string().unwrap_or_else(|e| e.to_string()))
         .collect::<Vec<String>>();
       context.insert("labels", &labels_str);
     },
-    Err(_) => ()
+    None => ()
   };
-  context.insert("update_at", &parse_date_str(data["update_at"].as_string()?)?);
-  match data["update_at"].as_string() {
-    Ok(update_at) => {
-      let update_at = parse_date_str(update_at)?;
-      context.insert("update_at", &update_at);
-    },
-    Err(_) => ()
-  }
   Ok(context)
 }
 fn parse_date_str(string: String) -> Result<String> {
@@ -199,9 +210,9 @@ fn parse_date_str(string: String) -> Result<String> {
 }
 #[cfg(test)]
 mod tests {
+  use crate::page::render::{from_action, from_markdown_dir, from_markdown_file};
   use fs_extra::copy_items;
   use fs_extra::dir::CopyOptions;
-  use crate::page::render::{from_action, from_markdown_dir, from_markdown_file};
 
   #[test]
   fn test_from_action() {
@@ -225,7 +236,7 @@ mod tests {
   }
   #[test]
   fn test_from_md_dir(){
-    from_markdown_dir(r"C:\Users\26216\code\github\ttdly.github.io\posts",
+    from_markdown_dir(r"D:\Code\md",
                        r"D:\Code\web\test_page").expect("aaaa");
     let mut options = CopyOptions::new(); // Initialize default values for CopyOptions
     options.copy_inside = true;
