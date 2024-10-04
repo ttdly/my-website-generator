@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block head %}{% block page_head%}{% endblock page_head %}{% endblock head%}
+{% block main%}<div class="page-nav">
+<ul>
+  {% for nav in nav_links %}<li><a href="{{ nav.link }}">{{ nav.title }}</a></li>{% endfor %}
+</ul>
+</div>
+{% block page_main %}{% endblock page_main %}{% endblock main %}

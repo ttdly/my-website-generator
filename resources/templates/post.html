@@ -1,31 +1,23 @@
-{% extends 'base.html' %}
-{% block head %}<link rel="stylesheet" href="assets/github-markdown-light.css">
-<link rel="stylesheet" href="assets/custom.css">{% endblock head %}
+{% extends 'page.html' %}
+{% block page_head %}<link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">{% endblock page_head %}
 {% block title %}{{ title }}{% endblock title %}
 
-{% block main %}<div class="head-block">
+{% block page_main %}<div class="head-block">
   <div class="title">{{ title }}</div>
   <div class="info">
     <ul>
       <li>{{ create_at }}</li>
-      {% if update_at %}
-      <li>[最后更新：{{ update_at }}]</li>
-      {% endif %}
-      {% if comments > 0 %}
-      <li>评论：{{ comments }}</li>
-      {% endif %}
+      {% if update_at %}<li>[最后更新：{{ update_at }}]</li>{% endif %}
+      {% if comments > 0 %}<li>评论：{{ comments }}</li>{% endif %}
     </ul>
     <ul>
-      {% if labels | length > 0 %}
-        {% for label in labels %}
-      <li><a class="label-link" href="/labels/{{ label }}.html">{{ label }}</a></li>
-        {% endfor %}
-      {% endif %}
+      {% if labels | length > 0 %}{% for label in labels %}<li><a class="label-link" href="/labels/{{ label }}.html">{{ label }}</a></li>{% endfor %} {% endif %}
     </ul>
   </div>
 </div>
 <div class="markdown-body">
   {{ blog_body | safe}}
-</div>{% endblock main %}
+</div>{% endblock page_main %}
 {% block script %}<script src="assets/codeCopy.js"></script>{% endblock script %}
 

@@ -7,10 +7,11 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tera::{Context, Tera};
+use crate::page::data::{get_nav_link, PostItem, PostItemList};
 
 pub fn from_action(github_event_file_path: &str,
-               save_markdown_file_path: &str,
-               save_html_file_path: &str) -> Result<()> {
+                   save_markdown_file_path: &str,
+                   save_html_file_path: &str) -> Result<()> {
   let json_content = fs::read_to_string(&github_event_file_path)?;
   let json_object: Value = serde_json::from_str(&json_content)?;
   let discussion_body = match json_object["discussion"]["body"].as_str(){
@@ -89,17 +90,30 @@ fn save2html(discussion_body: &str, discussion_number: &u64,
   Ok(())
 }
 
-fn render_html(save_html_file_path: &str, context: Context, save_html_file_name: &str) -> Result<()> {
+fn render_html(save_html_file_path: &str, mut context: Context, save_html_file_name: &str) -> Result<()> {
   let tera = match Tera::new("resources/templates/**/*.html") {
     Ok(tera) => tera,
     Err(e) => return Err(anyhow!("{}", e)),
   };
+  context.insert("nav_links", &get_nav_link());
   let html = tera.render("post.html", &context)?;
   let save_html_file_path = PathBuf::from(save_html_file_path)
     .join(format!("{}.html", save_html_file_name));
   println!("Saving html file to {:?}", save_html_file_path);
   fs::write(save_html_file_path, html)?;
+  save_index_data(&context, &save_html_file_name.parse::<u64>()?)?;
   Ok(())
+}
+
+fn save_index_data(context: &Context, discussion_number: &u64) -> Result<()> {
+  let post_item_list = PostItemList::new();
+  let post_item = PostItem{
+    title: context.get("title").unwrap().to_string(),
+    id: *discussion_number,
+    create_at: context.get("create_at").unwrap().to_string(),
+    post_abstract: String::new(),
+  };
+  Ok(post_item_list.insert(post_item).save())
 }
 
 fn create_context_from_action(json_object: &Value) -> Result<Context> {

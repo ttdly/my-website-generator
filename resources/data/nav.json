@@ -1,0 +1,6 @@
+[
+  {"title": "首页", "link": "/"},
+  {"title": "记录", "link": "/post.html"},
+  {"title": "归档", "link": "/archive.html"},
+  {"title": "关于", "link": "/about.html"}
+]
