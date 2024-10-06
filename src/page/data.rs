@@ -16,7 +16,7 @@ pub struct PostItem {
 }
 
 pub struct PostItemList{
-  posts: Vec<PostItem>,
+  pub(crate) posts: Vec<PostItem>,
 }
 
 impl PostItem {
@@ -53,7 +53,7 @@ impl PostItemList {
 
   pub fn insert(mut self, mut post_item: PostItem) -> PostItemList {
     post_item.title = post_item.title.replace("\"","");
-    post_item.create_at = post_item.title.replace("\"", "");
+    post_item.create_at = post_item.create_at.replace("\"", "");
     self = self.remove_a_item(&post_item);
     self.posts.push(post_item);
     self

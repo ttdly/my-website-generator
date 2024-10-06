@@ -1,0 +1,46 @@
+.page-nav {
+    margin-top: 80px;
+    margin-bottom: 2ch;
+}
+
+.page-nav ul {
+    padding: 0;
+    list-style: none;
+    display: flex;
+    gap: 1ch;
+    justify-content: end;
+}
+
+.page-nav ul a {
+    color: #787878;
+    transition: color .25s;
+}
+
+.page-nav ul a:hover {
+    color: #000;
+}
+
+.page-nav, .archive-list {
+    box-sizing: border-box;
+    min-width: 200px;
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 0 45px;
+}
+
+.archive-list {
+    list-style: none;
+    margin-top: 8ch;
+}
+
+.archive-list a {
+    text-decoration: none;
+    color: #000;
+    margin-left: 1ch;
+    transition: all .25s;
+}
+
+.archive-list a:hover {
+    color: blue;
+    text-decoration-line: underline;
+}

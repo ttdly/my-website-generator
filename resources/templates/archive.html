@@ -1,0 +1,8 @@
+{% extends 'page.html' %}
+{% block page_head %}<link rel="stylesheet" href="assets/archive.css">{% endblock page_head %}
+{% block title %}归档{% endblock title %}
+
+{% block page_main %}<ul class="archive-list">{% for item in post_items %}
+    <li><span>{{ item.create_at }}</span><a href="{{ item.id }}.html">{{ item.title }}</a></li>{% endfor %}
+</ul>{% endblock page_main %}
+{% block script %}<script src="assets/codeCopy.js"></script>{% endblock script %}
