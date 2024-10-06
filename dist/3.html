@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>echarts-开始</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">echarts-开始</div>
+  <div class="info">
+    <ul>
+      <li>2023年04月28日</li>
+      
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/echarts.html">echarts</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <h2>引入echarts</h2>
+<ol>
+<li>cdn</li>
+</ol>
+<div class="language-html"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">&lt;</span><span style="color:#63a35c;">script </span><span style="color:#795da3;">src</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;https://unpkg.com/echarts@5.4.2/dist/echarts.min.js&quot;</span><span style="color:#323232;">&gt;&lt;/</span><span style="color:#63a35c;">script</span><span style="color:#323232;">&gt;
+</span></span></code></pre></div>
+<h2>基本使用</h2>
+<p>echarts需要元素可以获取clientWidth和clientHeight，所以元素需要至少设置宽高中的一个。</p>
+<div class="language-html"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">&lt;</span><span style="color:#63a35c;">div </span><span style="color:#795da3;">id</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;chart&quot; </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">height</span><span style="color:#323232;">: </span><span style="color:#0086b3;">300</span><span style="font-weight:bold;color:#a71d5d;">px</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;&lt;/</span><span style="color:#63a35c;">div</span><span style="color:#323232;">&gt;
+</span></span><span class="line"><span style="color:#323232;">  &lt;</span><span style="color:#63a35c;">script</span><span style="color:#323232;">&gt;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#323232;">chart </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">echarts.init(</span><span style="color:#0086b3;">document</span><span style="color:#323232;">.</span><span style="color:#0086b3;">getElementById</span><span style="color:#323232;">(</span><span style="color:#183691;">&#39;chart&#39;</span><span style="color:#323232;">));
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span style="color:#323232;">option </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">{
+</span></span><span class="line"><span style="color:#323232;">      xAxis: {
+</span></span><span class="line"><span style="color:#323232;">        type: </span><span style="color:#183691;">&#39;category&#39;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">        data: [</span><span style="color:#183691;">&#39;Matcha Latte&#39;</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;Milk Tea&#39;</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;Cheese Cocoa&#39;</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;Walnut Brownie&#39;</span><span style="color:#323232;">]
+</span></span><span class="line"><span style="color:#323232;">      },
+</span></span><span class="line"><span style="color:#323232;">      yAxis: {},
+</span></span><span class="line"><span style="color:#323232;">      series: [
+</span></span><span class="line"><span style="color:#323232;">        {
+</span></span><span class="line"><span style="color:#323232;">          type: </span><span style="color:#183691;">&#39;bar&#39;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">          name: </span><span style="color:#183691;">&#39;2015&#39;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">          data: [</span><span style="color:#0086b3;">89.3</span><span style="color:#323232;">, </span><span style="color:#0086b3;">92.1</span><span style="color:#323232;">, </span><span style="color:#0086b3;">94.4</span><span style="color:#323232;">, </span><span style="color:#0086b3;">85.4</span><span style="color:#323232;">]
+</span></span><span class="line"><span style="color:#323232;">        },
+</span></span><span class="line"><span style="color:#323232;">        {
+</span></span><span class="line"><span style="color:#323232;">          type: </span><span style="color:#183691;">&#39;bar&#39;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">          name: </span><span style="color:#183691;">&#39;2016&#39;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">          data: [</span><span style="color:#0086b3;">95.8</span><span style="color:#323232;">, </span><span style="color:#0086b3;">89.4</span><span style="color:#323232;">, </span><span style="color:#0086b3;">91.2</span><span style="color:#323232;">, </span><span style="color:#0086b3;">76.9</span><span style="color:#323232;">]
+</span></span><span class="line"><span style="color:#323232;">        },
+</span></span><span class="line"><span style="color:#323232;">        {
+</span></span><span class="line"><span style="color:#323232;">          type: </span><span style="color:#183691;">&#39;bar&#39;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">          name: </span><span style="color:#183691;">&#39;2017&#39;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">          data: [</span><span style="color:#0086b3;">97.7</span><span style="color:#323232;">, </span><span style="color:#0086b3;">83.1</span><span style="color:#323232;">, </span><span style="color:#0086b3;">92.5</span><span style="color:#323232;">, </span><span style="color:#0086b3;">78.1</span><span style="color:#323232;">]
+</span></span><span class="line"><span style="color:#323232;">        }
+</span></span><span class="line"><span style="color:#323232;">      ]
+</span></span><span class="line"><span style="color:#323232;">    };
+</span></span><span class="line"><span style="color:#323232;">    chart.setOption(option);
+</span></span><span class="line"><span style="color:#323232;">  &lt;/</span><span style="color:#63a35c;">script</span><span style="color:#323232;">&gt;
+</span></span></code></pre></div>
+<h2>设置数据</h2>
+<h3>series</h3>
+<p>在每个系列单独设置在option的series中，可以为每组数据设计图表</p>
+<div class="language-js"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">let </span><span style="color:#323232;">option </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">{
+</span></span><span class="line"><span style="color:#323232;">  xAxis: {
+</span></span><span class="line"><span style="color:#323232;">    type: </span><span style="color:#183691;">&quot;category&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">    name: </span><span style="color:#183691;">&quot;日期&quot;
+</span></span><span class="line"><span style="color:#323232;">    data: [</span><span style="color:#183691;">&quot;2022-1-3&quot;</span><span style="color:#323232;">, </span><span style="color:#183691;">&quot;2022-1-4&quot;</span><span style="color:#323232;">, </span><span style="color:#183691;">&quot;2022-1-5&quot;</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">  },
+</span></span><span class="line"><span style="color:#323232;">  yAxis: {},
+</span></span><span class="line"><span style="color:#323232;">  series: [
+</span></span><span class="line"><span style="color:#323232;">    {
+</span></span><span class="line"><span style="color:#323232;">      type: </span><span style="color:#183691;">&quot;bar&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">      name: </span><span style="color:#183691;">&quot;总数量&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">      data: [</span><span style="color:#0086b3;">1</span><span style="color:#323232;">, </span><span style="color:#0086b3;">11</span><span style="color:#323232;">, </span><span style="color:#0086b3;">14</span><span style="color:#323232;">, </span><span style="color:#0086b3;">14</span><span style="color:#323232;">, </span><span style="color:#0086b3;">19</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">    },
+</span></span><span class="line"><span style="color:#323232;">    {
+</span></span><span class="line"><span style="color:#323232;">      type: </span><span style="color:#183691;">&quot;line&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">      name: </span><span style="color:#183691;">&quot;每日变化&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">      data: [</span><span style="color:#0086b3;">1</span><span style="color:#323232;">, </span><span style="color:#0086b3;">10</span><span style="color:#323232;">, </span><span style="color:#0086b3;">3</span><span style="color:#323232;">, </span><span style="color:#0086b3;">0</span><span style="color:#323232;">, </span><span style="color:#0086b3;">5</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">    },
+</span></span><span class="line"><span style="color:#323232;">  ],
+</span></span><span class="line"><span style="color:#323232;">};
+</span></span></code></pre></div>
+<h3>dataset</h3>
+<p>使用数据集的好处是数据能集中管理一波，和图表设置分开。</p>
+<div class="language-js"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">let </span><span style="color:#323232;">option </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">{
+</span></span><span class="line"><span style="color:#323232;">  legend: {},
+</span></span><span class="line"><span style="color:#323232;">  dataset: {
+</span></span><span class="line"><span style="color:#323232;">    source: [
+</span></span><span class="line"><span style="color:#323232;">      [</span><span style="color:#183691;">&quot;日期&quot;</span><span style="color:#323232;">, </span><span style="color:#183691;">&quot;总数量&quot;</span><span style="color:#323232;">, </span><span style="color:#183691;">&quot;每日变化&quot;</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">      [</span><span style="color:#183691;">&quot;2022-1-3&quot;</span><span style="color:#323232;">, </span><span style="color:#0086b3;">1</span><span style="color:#323232;">, </span><span style="color:#0086b3;">10</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">      [</span><span style="color:#183691;">&quot;2022-1-4&quot;</span><span style="color:#323232;">, </span><span style="color:#0086b3;">11</span><span style="color:#323232;">, </span><span style="color:#0086b3;">4</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">      [</span><span style="color:#183691;">&quot;2022-1-5&quot;</span><span style="color:#323232;">, </span><span style="color:#0086b3;">15</span><span style="color:#323232;">, </span><span style="color:#0086b3;">0</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">    ],
+</span></span><span class="line"><span style="color:#323232;">  },
+</span></span><span class="line"><span style="color:#323232;">  xAxis: {
+</span></span><span class="line"><span style="color:#323232;">    type: </span><span style="color:#183691;">&quot;category&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">  },
+</span></span><span class="line"><span style="color:#323232;">  yAxis: {},
+</span></span><span class="line"><span style="color:#323232;">  series: [
+</span></span><span class="line"><span style="color:#323232;">    {
+</span></span><span class="line"><span style="color:#323232;">      type: </span><span style="color:#183691;">&quot;bar&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">    },
+</span></span><span class="line"><span style="color:#323232;">    {
+</span></span><span class="line"><span style="color:#323232;">      type: </span><span style="color:#183691;">&quot;line&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">      smooth: </span><span style="color:#0086b3;">true</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">    },
+</span></span><span class="line"><span style="color:#323232;">  ],
+</span></span><span class="line"><span style="color:#323232;">};
+</span></span></code></pre></div>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>

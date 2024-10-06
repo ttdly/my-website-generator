@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>VitePress 中复制功能的使用</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">VitePress 中复制功能的使用</div>
+  <div class="info">
+    <ul>
+      <li>2024年09月22日</li>
+      
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/web.html">web</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <p>在 VitePress 生成 Markdown 文档中代码块时，会在最终生成的代码块中添加复制代码的按钮。在检查这个按钮的时候发现页面中的仅仅是一个按钮，并没有添加什么点击事件，在翻阅了 VitePress 的代码之后，发现在 <code>src\client\app\composables\copyCode.ts</code> 文件中有该功能的详细实现。</p>
+<p><a href="https://github.com/vuejs/vitepress/blob/main/src/client/app/composables/copyCode.ts">代码地址</a></p>
+<blockquote>
+<p>src\client\app\composables\copyCode.ts</p>
+<div class="language-typescript"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">import { inBrowser } from &#39;vitepress&#39;
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">export function useCopyCode() {
+</span></span><span class="line"><span style="color:#323232;">   if (inBrowser) {
+</span></span><span class="line"><span style="color:#323232;">       const timeoutIdMap: WeakMap&lt;HTMLElement, NodeJS.Timeout&gt; = new WeakMap()
+</span></span><span class="line"><span style="color:#323232;">       window.addEventListener(&#39;click&#39;, (e) =&gt; {
+</span></span><span class="line"><span style="color:#323232;">          const el = e.target as HTMLElement
+</span></span><span class="line"><span style="color:#323232;">          if (el.matches(&#39;div[class*=&quot;language-&quot;] &gt; button.copy&#39;)) {
+</span></span><span class="line"><span style="color:#323232;">            const parent = el.parentElement
+</span></span><span class="line"><span style="color:#323232;">            const sibling = el.nextElementSibling?.nextElementSibling
+</span></span><span class="line"><span style="color:#323232;">            if (!parent || !sibling) {
+</span></span><span class="line"><span style="color:#323232;">              return
+</span></span><span class="line"><span style="color:#323232;">            }
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">            const isShell = /language-(shellscript|shell|bash|sh|zsh)/.test(
+</span></span><span class="line"><span style="color:#323232;">              parent.className
+</span></span><span class="line"><span style="color:#323232;">            )
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">            let text = &#39;&#39;
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">            sibling
+</span></span><span class="line"><span style="color:#323232;">              .querySelectorAll(&#39;span.line:not(.diff.remove)&#39;)
+</span></span><span class="line"><span style="color:#323232;">              .forEach((node) =&gt; (text += (node.textContent || &#39;&#39;) + &#39;\n&#39;))
+</span></span><span class="line"><span style="color:#323232;">            text = text.slice(0, -1)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">            if (isShell) {
+</span></span><span class="line"><span style="color:#323232;">              text = text.replace(/^ *(\$|&gt;) /gm, &#39;&#39;).trim()
+</span></span><span class="line"><span style="color:#323232;">            }
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">            copyToClipboard(text).then(() =&gt; {
+</span></span><span class="line"><span style="color:#323232;">              el.classList.add(&#39;copied&#39;)
+</span></span><span class="line"><span style="color:#323232;">              clearTimeout(timeoutIdMap.get(el))
+</span></span><span class="line"><span style="color:#323232;">              const timeoutId = setTimeout(() =&gt; {
+</span></span><span class="line"><span style="color:#323232;">                el.classList.remove(&#39;copied&#39;)
+</span></span><span class="line"><span style="color:#323232;">                el.blur()
+</span></span><span class="line"><span style="color:#323232;">                timeoutIdMap.delete(el)
+</span></span><span class="line"><span style="color:#323232;">              }, 2000)
+</span></span><span class="line"><span style="color:#323232;">              timeoutIdMap.set(el, timeoutId)
+</span></span><span class="line"><span style="color:#323232;">            })
+</span></span><span class="line"><span style="color:#323232;">          }
+</span></span><span class="line"><span style="color:#323232;">       })
+</span></span><span class="line"><span style="color:#323232;">   }
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">async function copyToClipboard(text: string) {
+</span></span><span class="line"><span style="color:#323232;">   try {
+</span></span><span class="line"><span style="color:#323232;">       return navigator.clipboard.writeText(text)
+</span></span><span class="line"><span style="color:#323232;">   } catch {
+</span></span><span class="line"><span style="color:#323232;">       const element = document.createElement(&#39;textarea&#39;)
+</span></span><span class="line"><span style="color:#323232;">       const previouslyFocusedElement = document.activeElement
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">       element.value = text
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">       // Prevent keyboard from showing on mobile
+</span></span><span class="line"><span style="color:#323232;">       element.setAttribute(&#39;readonly&#39;, &#39;&#39;)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">       element.style.contain = &#39;strict&#39;
+</span></span><span class="line"><span style="color:#323232;">       element.style.position = &#39;absolute&#39;
+</span></span><span class="line"><span style="color:#323232;">       element.style.left = &#39;-9999px&#39;
+</span></span><span class="line"><span style="color:#323232;">       element.style.fontSize = &#39;12pt&#39; // Prevent zooming on iOS
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">       const selection = document.getSelection()
+</span></span><span class="line"><span style="color:#323232;">       const originalRange = selection
+</span></span><span class="line"><span style="color:#323232;">          ? selection.rangeCount &gt; 0 &amp;&amp; selection.getRangeAt(0)
+</span></span><span class="line"><span style="color:#323232;">          : null
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">       document.body.appendChild(element)
+</span></span><span class="line"><span style="color:#323232;">       element.select()
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">       // Explicit selection workaround for iOS
+</span></span><span class="line"><span style="color:#323232;">       element.selectionStart = 0
+</span></span><span class="line"><span style="color:#323232;">       element.selectionEnd = text.length
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">       document.execCommand(&#39;copy&#39;)
+</span></span><span class="line"><span style="color:#323232;">       document.body.removeChild(element)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">       if (originalRange) {
+</span></span><span class="line"><span style="color:#323232;">          selection!.removeAllRanges() // originalRange can&#39;t be truthy when selection is falsy
+</span></span><span class="line"><span style="color:#323232;">          selection!.addRange(originalRange)
+</span></span><span class="line"><span style="color:#323232;">       }
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">       // Get the focus back on the previously focused element, if any
+</span></span><span class="line"><span style="color:#323232;">       if (previouslyFocusedElement) {
+</span></span><span class="line"><span style="color:#323232;">          ;(previouslyFocusedElement as HTMLElement).focus()
+</span></span><span class="line"><span style="color:#323232;">       }
+</span></span><span class="line"><span style="color:#323232;">   }
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+</blockquote>
+<p>那么问题来了，如何把这个功能拿来自己使用？</p>
+<p>仔细阅读一下源码，首先 <code>useCopyCode</code> 对页面中的  <code>click</code> 事件进行了监听，并且判断是否是复制代码的按钮，如果判断正确，就获取父元素和兄弟元素，父元素是用来判断语言类型，而兄弟元素用来获得所有的代码文本。</p>
+<p>从 html 元素中获得文本的代码如下，首先获取 <code>span</code> 元素中类为 <code>line</code> 的元素并排除 <code>.diff.remove</code> 并获取元素的文本，如果文本为 <code>null</code> 或  <code>undefined</code> 则替换为空文本，并在每行的末尾添加换行符。</p>
+<div class="language-typescript"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">sibling.querySelectorAll(&#39;span.line:not(.diff.remove)&#39;)
+</span></span><span class="line"><span style="color:#323232;">       .forEach((node) =&gt; (text += (node.textContent || &#39;&#39;) + &#39;\n&#39;))
+</span></span></code></pre></div>
+<p>以下这段代码则是去除 <code>shell</code> 代码中的 <code>$</code>、<code>&gt;</code> 以及文本前后的空行：</p>
+<div class="language-typescript"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">text = text.replace(/^ *(\$|&gt;) /gm, &#39;&#39;).trim()
+</span></span></code></pre></div>
+<p>以下这段代码是更改复制按钮的样式：</p>
+<div class="language-typescript"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">copyToClipboard(text).then(() =&gt; {
+</span></span><span class="line"><span style="color:#323232;">  el.classList.add(&#39;copied&#39;) // 为按钮添加 `copied` 类
+</span></span><span class="line"><span style="color:#323232;">  clearTimeout(timeoutIdMap.get(el)) // 清除 weakmap 中的计时器
+</span></span><span class="line"><span style="color:#323232;">  const timeoutId = setTimeout(() =&gt; {
+</span></span><span class="line"><span style="color:#323232;">    el.classList.remove(&#39;copied&#39;) // 去除 `copied` 类
+</span></span><span class="line"><span style="color:#323232;">    el.blur() // 移除元素的聚焦
+</span></span><span class="line"><span style="color:#323232;">    timeoutIdMap.delete(el)
+</span></span><span class="line"><span style="color:#323232;">  }, 2000)
+</span></span><span class="line"><span style="color:#323232;">  timeoutIdMap.set(el, timeoutId)
+</span></span><span class="line"><span style="color:#323232;">})
+</span></span></code></pre></div>
+<p><code>copyToClipboard</code> 则是将文本复制到系统的剪贴板中。</p>
+<p>如果想要自己使用，则只需要在 <code>useCopyCode</code> 代码中按照自己的要求修改即可。</p>
+<p>对于复制按钮的 css 样式如下所示：</p>
+<div class="language-css"><button class="copy"></button><pre><code><span class="line"><span style="color:#63a35c;">button</span><span style="color:#323232;">.</span><span style="color:#795da3;">copy</span><span style="color:#323232;">{
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">--size</span><span style="color:#323232;">: </span><span style="color:#0086b3;">28</span><span style="font-weight:bold;color:#a71d5d;">px</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">height</span><span style="color:#323232;">: var(</span><span style="color:#0086b3;">--size</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">width</span><span style="color:#323232;">: var(</span><span style="color:#0086b3;">--size</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">background</span><span style="color:#323232;">: none;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">background-image</span><span style="color:#323232;">: url(</span><span style="color:#183691;">&#39;Base64 编码图像，此处省略&#39;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">background-repeat</span><span style="color:#323232;">: no-repeat;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">border</span><span style="color:#323232;">: </span><span style="color:#0086b3;">1</span><span style="font-weight:bold;color:#a71d5d;">px </span><span style="color:#323232;">solid </span><span style="color:#ed6a43;">#000</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">border-radius</span><span style="color:#323232;">: </span><span style="color:#0086b3;">2</span><span style="font-weight:bold;color:#a71d5d;">px</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">background-position</span><span style="color:#323232;">: </span><span style="color:#0086b3;">50</span><span style="font-weight:bold;color:#a71d5d;">%</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">background-size</span><span style="color:#323232;">: </span><span style="color:#0086b3;">20</span><span style="font-weight:bold;color:#a71d5d;">px</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">padding</span><span style="color:#323232;">: </span><span style="color:#0086b3;">5</span><span style="font-weight:bold;color:#a71d5d;">px</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">box-sizing</span><span style="color:#323232;">: border-box;
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#63a35c;">button</span><span style="color:#323232;">.</span><span style="color:#795da3;">copied</span><span style="color:#323232;">{
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">background-image</span><span style="color:#323232;">: url(</span><span style="color:#183691;">&#39;Base64 编码图像，此处省略&#39;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>生成排列问题</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">生成排列问题</div>
+  <div class="info">
+    <ul>
+      <li>2023年11月16日</li>
+      <li>[最后更新：2023年11月17日]</li>
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/算法.html">算法</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <p>对于 1-5 生成它的全排列，这里只列出三个方法：自底向上生成排列（插入）、Johnson-Trotter 算法、字典序算法。但是本人没有考虑到边界问题，所以可能处理边界情况的时候会报错。</p>
+<h2>自底向上生成排列</h2>
+<p>自底向上生成排列，说白了就是在一个序列的空隙中插入待排列数据，如果现在只有一个元素，它的全排列就只有一个 {1}。那么它就会有两个位置可以插入 2，插入之后就有两个排列，也就是 {2, 1}、{1, 2}，这两个排列都有三个位置可以插入 3。3 个元素的全排列就是 {3, 2, 1}、{2, 3, 1}、{2, 1, 3}、{3, 1, 2}、{1, 3, 2}、{1, 2, 3}。</p>
+<p>我们可以借助递归来实现这一算法：</p>
+<div class="language-c++"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">#include </span><span style="color:#183691;">&lt;vector&gt;
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">#include </span><span style="color:#183691;">&lt;iostream&gt;
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">using namespace</span><span style="color:#323232;"> std;
+</span></span><span class="line"><span style="color:#323232;">vector&lt;vector&lt;</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;">&gt;&gt; result;
+</span></span><span class="line"><span style="color:#323232;">vector&lt;</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;">&gt;::iterator it;
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">AllSort</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">n) {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-style:italic;color:#969896;">// 存储待插入元素的排列 
+</span></span><span class="line"><span style="color:#323232;">  vector&lt;</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;">&gt; curr; 
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">1</span><span style="color:#323232;">; i </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> n; i</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// 暂时存储本轮的全排列
+</span></span><span class="line"><span style="color:#323232;">    vector&lt;vector&lt;</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;">&gt;&gt; temp;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// 记录插入的位置
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> j </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// 遍历上一轮中的全排列
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> k </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; k </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> result.size(); k</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> j </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; j </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span style="color:#323232;">; j</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-style:italic;color:#969896;">// 取出上一轮的全排列
+</span></span><span class="line"><span style="color:#323232;">        curr </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> result[k];
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-style:italic;color:#969896;">// 计算插入位置
+</span></span><span class="line"><span style="color:#323232;">        it </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> curr.begin() </span><span style="font-weight:bold;color:#a71d5d;">+</span><span style="color:#323232;"> j;
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-style:italic;color:#969896;">// 插入元素
+</span></span><span class="line"><span style="color:#323232;">        curr.insert(it, i </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-style:italic;color:#969896;">// 暂存全排列
+</span></span><span class="line"><span style="color:#323232;">        temp.push_back(curr);
+</span></span><span class="line"><span style="color:#323232;">      }
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">    result </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> temp;
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">int </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-style:italic;color:#969896;">// 初始化，先插入仅有一个元素的排列
+</span></span><span class="line"><span style="color:#323232;">  result.push_back({</span><span style="color:#0086b3;">1</span><span style="color:#323232;">});
+</span></span><span class="line"><span style="color:#323232;">  AllSort(</span><span style="color:#0086b3;">4</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-style:italic;color:#969896;">// 输出
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> n </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; n </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> result.size(); n</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">    cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt; </span><span style="color:#183691;">&#39;{&#39;</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> m </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; m </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> result[n].size(); m</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">      cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span style="color:#323232;"> result[n][m];
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(m </span><span style="font-weight:bold;color:#a71d5d;">!=</span><span style="color:#323232;"> result[n].size() </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">1</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">        cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt; </span><span style="color:#183691;">&#39;,&#39;</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">    cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt; </span><span style="color:#183691;">&#39;}&#39; </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span style="color:#323232;"> endl;
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">0</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+<h2>Johnson-Trotter 算法</h2>
+<p>JT 算法对于 1-5 数字全排列是这么做的：
+<span class="math math-display">\mathop{1}\limits^{\leftarrow}\mathop{2}\limits^{\leftarrow}\mathop{3}\limits^{\leftarrow}</span>
+这是初始状态，如果说一个元素指向的元素比他小，那么就说这个元素可以移动，找到其中最大的可移动元素 A，移动，直到 A 不能移动再查找序列中比 A 大的元素，反转方向，再次循环。</p>
+<div class="language-c++"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">#include </span><span style="color:#183691;">&lt;iostream&gt;
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">using namespace</span><span style="color:#323232;"> std;
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">// 交换元素
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">swap</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int&amp; </span><span style="color:#323232;">a, </span><span style="font-weight:bold;color:#a71d5d;">int&amp; </span><span style="color:#323232;">b) {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> temp </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> a;
+</span></span><span class="line"><span style="color:#323232;">  a </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> b;
+</span></span><span class="line"><span style="color:#323232;">  b </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> temp;
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">// 判断元素是否能够移动
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">bool </span><span style="font-weight:bold;color:#795da3;">IsMovable</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">arr[], </span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">mark[], </span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">index, </span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">n) {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> next </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> index </span><span style="font-weight:bold;color:#a71d5d;">+</span><span style="color:#323232;"> mark[index];
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-style:italic;color:#969896;">// 下标小于 0 或者大于 n 都不能移动
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(next </span><span style="font-weight:bold;color:#a71d5d;">&lt; </span><span style="color:#0086b3;">0</span><span style="color:#323232;">) </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">false</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(next </span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span style="color:#323232;"> n </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">1</span><span style="color:#323232;">) </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">false</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-style:italic;color:#969896;">// 如果本元素大于下一个元素，则可以移动
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">return</span><span style="color:#323232;"> arr[index] </span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span style="color:#323232;"> arr[next];
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">// 反转标记
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">RevertMark</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int &amp;</span><span style="color:#323232;">mark) {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(mark </span><span style="font-weight:bold;color:#a71d5d;">== -</span><span style="color:#0086b3;">1</span><span style="color:#323232;">) mark </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">1</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">else</span><span style="color:#323232;"> mark </span><span style="font-weight:bold;color:#a71d5d;">= -</span><span style="color:#0086b3;">1</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">// 打印数组
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">PrintArr</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">arr[], </span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">n) {
+</span></span><span class="line"><span style="color:#323232;">  cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt; </span><span style="color:#183691;">&#39;{&#39;</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; i </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> n; i</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">    cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span style="color:#323232;"> arr[i];
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(i </span><span style="font-weight:bold;color:#a71d5d;">!=</span><span style="color:#323232;"> n </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">1</span><span style="color:#323232;">) cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt; </span><span style="color:#183691;">&#39;,&#39;</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">  cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt; </span><span style="color:#183691;">&#39;}&#39; </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span style="color:#323232;"> endl;
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">JT</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">n) {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-style:italic;color:#969896;">// 分配待排序序列空间
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">int*</span><span style="color:#323232;"> arr </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int*</span><span style="color:#323232;">)</span><span style="color:#62a35c;">malloc</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">sizeof</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;">) </span><span style="font-weight:bold;color:#a71d5d;">*</span><span style="color:#323232;"> n);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-style:italic;color:#969896;">// 分配标记空间
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">int*</span><span style="color:#323232;"> mark </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int*</span><span style="color:#323232;">)</span><span style="color:#62a35c;">malloc</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">sizeof</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;">) </span><span style="font-weight:bold;color:#a71d5d;">*</span><span style="color:#323232;"> n);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-style:italic;color:#969896;">// 标记序列中是否还有能够移动的标记
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> count </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> n;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-style:italic;color:#969896;">// 初始化待排序序列和标记数组
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; i </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> n; i</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">    arr[i] </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    mark[i] </span><span style="font-weight:bold;color:#a71d5d;">= -</span><span style="color:#0086b3;">1</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-style:italic;color:#969896;">// 最初的状态也是一个排列
+</span></span><span class="line"><span style="color:#323232;">  PrintArr(arr, n);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">while</span><span style="color:#323232;">(count</span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span style="color:#0086b3;">0</span><span style="color:#323232;">){
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> k </span><span style="font-weight:bold;color:#a71d5d;">= -</span><span style="color:#0086b3;">1</span><span style="color:#323232;">, index </span><span style="font-weight:bold;color:#a71d5d;">= -</span><span style="color:#0086b3;">1</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// 计算序列中所有可以移动的元素
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; i </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> n; i</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(IsMovable(arr, mark, i, n) </span><span style="font-weight:bold;color:#a71d5d;">&amp;&amp;</span><span style="color:#323232;"> arr[i] </span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span style="color:#323232;"> k) {
+</span></span><span class="line"><span style="color:#323232;">        k </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> arr[i], index </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> i;
+</span></span><span class="line"><span style="color:#323232;">      }
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// 计算元素移动位置
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> next </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> index </span><span style="font-weight:bold;color:#a71d5d;">+</span><span style="color:#323232;"> mark[index];
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// 移动元素
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">while </span><span style="color:#323232;">(IsMovable(arr, mark, index, n)) {
+</span></span><span class="line"><span style="color:#323232;">      swap(arr[index], arr[next]);
+</span></span><span class="line"><span style="color:#323232;">      swap(mark[index], mark[next]);
+</span></span><span class="line"><span style="color:#323232;">      index </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> next;
+</span></span><span class="line"><span style="color:#323232;">      next </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> index </span><span style="font-weight:bold;color:#a71d5d;">+</span><span style="color:#323232;"> mark[index];
+</span></span><span class="line"><span style="color:#323232;">      count</span><span style="font-weight:bold;color:#a71d5d;">--</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">      PrintArr(arr, n);
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-style:italic;color:#969896;">//PrintArr(mark, n);
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// 反转所有比这次移动元素大的元素方向并判断是否可以移动
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; i </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> n; i</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(arr[i] </span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span style="color:#323232;"> k) RevertMark(mark[i]);
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(IsMovable(arr, mark, i, n)) count</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">int </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() {
+</span></span><span class="line"><span style="color:#323232;">  JT(</span><span style="color:#0086b3;">3</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">0</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+<h2>字典序算法</h2>
+<p>先从右往左，找出第一个比右边元素小的元素 A ，再从右往左找到第一个比 A 大的元素 B，交换 A 和 B 之后，A 的下标后移，接着反转从 A 到序列最右边的所有元素，如果有比右边的元素小的元素，则继续下次循环。如：</p>
+<p>1234 先找到 3 ，再从右到左找到第一个比 3 大的 4，交换 3 4 得 <strong>1243</strong>；接着找到 A:2，B:3，交换：<strong>1342</strong>，反转 1324；接着 A:2，B:4，交换：1342，以此类推，可以得到 1234 这 4 个元素的全排列。</p>
+<div class="language-c++"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">#include </span><span style="color:#183691;">&lt;iostream&gt;
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">using namespace</span><span style="color:#323232;"> std;
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">// 交换元素
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">swap</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int&amp; </span><span style="color:#323232;">a, </span><span style="font-weight:bold;color:#a71d5d;">int&amp; </span><span style="color:#323232;">b) {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> temp </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> a;
+</span></span><span class="line"><span style="color:#323232;">  a </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> b;
+</span></span><span class="line"><span style="color:#323232;">  b </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> temp;
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">// 判断是否可以继续排列，如果有比右边元素小的元素，那么可以继续排列
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">bool </span><span style="font-weight:bold;color:#795da3;">ContinueSort</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">arr[], </span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">n) {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; i </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> n</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1</span><span style="color:#323232;">; i</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(arr[i] </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> arr[i </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span style="color:#323232;">]) </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">true</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">false</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">// 打印数组
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">PrintArr</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">arr[], </span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">n) {
+</span></span><span class="line"><span style="color:#323232;">  cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt; </span><span style="color:#183691;">&#39;{&#39;</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; i </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> n; i</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">    cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span style="color:#323232;"> arr[i];
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(i </span><span style="font-weight:bold;color:#a71d5d;">!=</span><span style="color:#323232;"> n </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">1</span><span style="color:#323232;">) cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt; </span><span style="color:#183691;">&#39;,&#39;</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">  cout </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt; </span><span style="color:#183691;">&#39;}&#39; </span><span style="font-weight:bold;color:#a71d5d;">&lt;&lt;</span><span style="color:#323232;"> endl;
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">void </span><span style="font-weight:bold;color:#795da3;">ZiDianSort</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">arr[], </span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">n) {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> a </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">, b </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">while</span><span style="color:#323232;">(ContinueSort(arr,n)){
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> n </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">1</span><span style="color:#323232;">; i </span><span style="font-weight:bold;color:#a71d5d;">&gt; </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; i</span><span style="font-weight:bold;color:#a71d5d;">--</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-style:italic;color:#969896;">// 从右往左找到第一个比右边小的元素
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(arr[i] </span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span style="color:#323232;"> arr[i </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">1</span><span style="color:#323232;">]) {
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-style:italic;color:#969896;">// 记录该元素的下标 a
+</span></span><span class="line"><span style="color:#323232;">        a </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">1</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">break</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">      }
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// 再从右往左找到第一个比下标 a 元素大的元素
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> j </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> n </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#0086b3;">1</span><span style="color:#323232;">; j </span><span style="font-weight:bold;color:#a71d5d;">&gt; </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; j</span><span style="font-weight:bold;color:#a71d5d;">--</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(arr[j] </span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span style="color:#323232;"> arr[a]) {
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-style:italic;color:#969896;">// 记录下标为 b
+</span></span><span class="line"><span style="color:#323232;">        b </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> j;
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">break</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">      }
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// 交换两个元素
+</span></span><span class="line"><span style="color:#323232;">    swap(arr[a], arr[b]);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// a 的下标后移
+</span></span><span class="line"><span style="color:#323232;">    a</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    b </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> n</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#0086b3;">1</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// 反转从 a 到 序列最右边的元素
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">while </span><span style="color:#323232;">(a </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> b) {
+</span></span><span class="line"><span style="color:#323232;">      swap(arr[a</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">], arr[b</span><span style="font-weight:bold;color:#a71d5d;">--</span><span style="color:#323232;">]);
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">    PrintArr(arr, n);
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">int </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> n </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">4</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">int*</span><span style="color:#323232;"> arr </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int*</span><span style="color:#323232;">)</span><span style="color:#62a35c;">malloc</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">sizeof</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;">) </span><span style="font-weight:bold;color:#a71d5d;">*</span><span style="color:#323232;"> n);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0</span><span style="color:#323232;">; i </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;"> n; i</span><span style="font-weight:bold;color:#a71d5d;">++</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">    arr[i] </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> i </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">1</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">  PrintArr(arr, n);
+</span></span><span class="line"><span style="color:#323232;">  ZiDianSort(arr,n);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">0</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>

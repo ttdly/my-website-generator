@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>rust 实现文件加解密</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">rust 实现文件加解密</div>
+  <div class="info">
+    <ul>
+      <li>2024年06月09日</li>
+      
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/rust.html">rust</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <p>本方法使用了 <code>aes-gcm</code>  与 <code>pbkdf2</code> 库，其中 <code>aes-gcm</code>  用来加密文件， <code>pbkdf2</code> 用来生成加密密钥</p>
+<p>附上整个文件加解密类的实现代码：
+依赖：</p>
+<div class="language-toml"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">aes-gcm = &quot;0.10&quot;
+</span></span><span class="line"><span style="color:#323232;">pbkdf2 = { version = &quot;0.12&quot;, features = [&quot;simple&quot;] }
+</span></span><span class="line"><span style="color:#323232;">sha2 = &quot;0.10.8&quot;
+</span></span></code></pre></div>
+<p>代码：</p>
+<div class="language-rs"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">pub struct </span><span style="color:#323232;">FileEncryption&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;cipher</span><span style="color:#323232;">&gt; {
+</span></span><span class="line"><span style="color:#323232;">  password: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;cipher str</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">  rounds: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">impl</span><span style="color:#323232;">&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;cipher</span><span style="color:#323232;">&gt; FileEncryption&lt;</span><span style="font-weight:bold;color:#a71d5d;">&#39;cipher</span><span style="color:#323232;">&gt; {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">new</span><span style="color:#323232;">(password: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;cipher str</span><span style="color:#323232;">, rounds: </span><span style="font-weight:bold;color:#a71d5d;">u32</span><span style="color:#323232;">) -&gt; </span><span style="font-weight:bold;color:#a71d5d;">Self </span><span style="color:#323232;">{
+</span></span><span class="line"><span style="color:#323232;">    FileEncryption {
+</span></span><span class="line"><span style="color:#323232;">      password,
+</span></span><span class="line"><span style="color:#323232;">      rounds,
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">create_password</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">self, file_name: </span><span style="font-weight:bold;color:#a71d5d;">&amp;str</span><span style="color:#323232;">) -&gt; Result&lt;[</span><span style="font-weight:bold;color:#a71d5d;">u8</span><span style="color:#323232;">; </span><span style="color:#0086b3;">32</span><span style="color:#323232;">]&gt; {
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> salt </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> file_name.</span><span style="color:#62a35c;">as_bytes</span><span style="color:#323232;">();
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> password </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">self.password.</span><span style="color:#62a35c;">as_bytes</span><span style="color:#323232;">();
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> key </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">[</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">u8</span><span style="color:#323232;">; </span><span style="color:#0086b3;">32</span><span style="color:#323232;">];
+</span></span><span class="line"><span style="color:#323232;">    pbkdf2_hmac::&lt;Sha256&gt;(password, salt, self.rounds, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span style="color:#323232;"> key);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="color:#0086b3;">Ok</span><span style="color:#323232;">(key)
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">generate_cipher_and_nonce</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">self, file_name: </span><span style="font-weight:bold;color:#a71d5d;">&amp;str</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">                               -&gt; Result&lt;(AesGcm&lt;Aes256, U12&gt;, GenericArray&lt;</span><span style="font-weight:bold;color:#a71d5d;">u8</span><span style="color:#323232;">, U12&gt;)&gt; {
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> key </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">self.</span><span style="color:#62a35c;">create_password</span><span style="color:#323232;">(file_name)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> key </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">Key::&lt;Aes256Gcm&gt;::from(key);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> cipher </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">Aes256Gcm::new(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">key);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> nonce </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">Nonce::default();
+</span></span><span class="line"><span style="color:#323232;">    pbkdf2_hmac::&lt;Sha256&gt;(file_name.</span><span style="color:#62a35c;">as_bytes</span><span style="color:#323232;">(), self.password.</span><span style="color:#62a35c;">as_bytes</span><span style="color:#323232;">(), self.rounds, </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span style="color:#323232;"> nonce);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="color:#0086b3;">Ok</span><span style="color:#323232;">((cipher, nonce))
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">encrypt_file</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">self, file_path: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">Path) -&gt; Result&lt;PathBuf&gt; {
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> file_name </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> file_path.</span><span style="color:#62a35c;">file_name</span><span style="color:#323232;">().</span><span style="color:#62a35c;">ok_or</span><span style="color:#323232;">(anyhow!(</span><span style="color:#0086b3;">CANNOT_READ_FILE_NAME</span><span style="color:#323232;">))</span><span style="font-weight:bold;color:#a71d5d;">?
+</span></span><span class="line"><span style="color:#323232;">      .</span><span style="color:#62a35c;">to_str</span><span style="color:#323232;">().</span><span style="color:#62a35c;">ok_or</span><span style="color:#323232;">(anyhow!(</span><span style="color:#0086b3;">CONVERT_STR_FAIL</span><span style="color:#323232;">))</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span style="color:#323232;">(cipher, nonce) </span><span style="font-weight:bold;color:#a71d5d;">=
+</span></span><span class="line"><span style="color:#323232;">      self.</span><span style="color:#62a35c;">generate_cipher_and_nonce</span><span style="color:#323232;">(file_name)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> input_file </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">File::open(file_path)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> buffer </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span style="color:#323232;">::new();
+</span></span><span class="line"><span style="color:#323232;">    input_file.</span><span style="color:#62a35c;">read_to_end</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span style="color:#323232;"> buffer)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> ciphertext </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> cipher.</span><span style="color:#62a35c;">encrypt</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">nonce, </span><span style="font-weight:bold;color:#a71d5d;">&amp;*</span><span style="color:#323232;">buffer);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Err</span><span style="color:#323232;">(e) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> ciphertext {
+</span></span><span class="line"><span style="color:#323232;">      anyhow!(e);
+</span></span><span class="line"><span style="color:#323232;">    };
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> ciphertext </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> ciphertext.</span><span style="color:#62a35c;">unwrap</span><span style="color:#323232;">();
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> save_path </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">PathBuf::new().</span><span style="color:#62a35c;">join</span><span style="color:#323232;">(</span><span style="color:#0086b3;">TEMP_PATH</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">      .</span><span style="color:#62a35c;">join</span><span style="color:#323232;">(format!(</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}{}</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">, file_name, </span><span style="color:#0086b3;">ENCRYPTED_FILE_SUFFIX</span><span style="color:#323232;">));
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> output_file </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">File::create(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">save_path)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    output_file.</span><span style="color:#62a35c;">write_all</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;*</span><span style="color:#323232;">ciphertext)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="color:#0086b3;">Ok</span><span style="color:#323232;">(save_path)
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">decrypt_file</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">self, file_path: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">Path) -&gt; Result&lt;PathBuf&gt; {
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> file_name </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> file_path.</span><span style="color:#62a35c;">file_name</span><span style="color:#323232;">().</span><span style="color:#62a35c;">ok_or</span><span style="color:#323232;">(anyhow!(</span><span style="color:#0086b3;">CANNOT_READ_FILE_NAME</span><span style="color:#323232;">))</span><span style="font-weight:bold;color:#a71d5d;">?
+</span></span><span class="line"><span style="color:#323232;">      .</span><span style="color:#62a35c;">to_str</span><span style="color:#323232;">().</span><span style="color:#62a35c;">ok_or</span><span style="color:#323232;">(anyhow!(</span><span style="color:#0086b3;">CONVERT_STR_FAIL</span><span style="color:#323232;">))</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">.</span><span style="color:#62a35c;">replace</span><span style="color:#323232;">(</span><span style="color:#0086b3;">ENCRYPTED_FILE_SUFFIX</span><span style="color:#323232;">, </span><span style="color:#183691;">&quot;&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span style="color:#323232;">(cipher, nonce) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">self.</span><span style="color:#62a35c;">generate_cipher_and_nonce</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;*</span><span style="color:#323232;">file_name)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> input_file </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">File::open(file_path)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> buffer </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Vec</span><span style="color:#323232;">::new();
+</span></span><span class="line"><span style="color:#323232;">    input_file.</span><span style="color:#62a35c;">read_to_end</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span style="color:#323232;"> buffer)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> ciphertext </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> cipher.</span><span style="color:#62a35c;">decrypt</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">nonce, </span><span style="font-weight:bold;color:#a71d5d;">&amp;*</span><span style="color:#323232;">buffer);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">if let </span><span style="color:#0086b3;">Err</span><span style="color:#323232;">(e) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> ciphertext {
+</span></span><span class="line"><span style="color:#323232;">      anyhow!(e);
+</span></span><span class="line"><span style="color:#323232;">    };
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> ciphertext </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> ciphertext.</span><span style="color:#62a35c;">unwrap</span><span style="color:#323232;">();
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> save_path </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">PathBuf::new().</span><span style="color:#62a35c;">join</span><span style="color:#323232;">(</span><span style="color:#0086b3;">TEMP_PATH</span><span style="color:#323232;">).</span><span style="color:#62a35c;">join</span><span style="color:#323232;">(file_name);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> output_file </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">File::create(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">save_path)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    output_file.</span><span style="color:#62a35c;">write_all</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;*</span><span style="color:#323232;">ciphertext)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="color:#0086b3;">Ok</span><span style="color:#323232;">(save_path)
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+<p>大写的常量都是其他文件里定义的 <code>&amp;str</code> 类型</p>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>Echarts-坐标轴</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">Echarts-坐标轴</div>
+  <div class="info">
+    <ul>
+      <li>2023年04月29日</li>
+      <li>[最后更新：2023年05月15日]</li>
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/echarts.html">echarts</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <p><img src="https://user-images.githubusercontent.com/108915955/235289375-af18047d-93dc-47b3-9f1a-bb112d98a893.png" alt="bar_none_axis" />
+在一些后台管理系统的数据面板上，我看到过像这种没有坐标轴的图表，那么如何使用echarts来实现这种效果？<br />
+首先，看看echarts的坐标轴属性，图示如下：<br />
+<img src="https://user-images.githubusercontent.com/108915955/235289405-5ba74a73-ace3-4cdb-81ec-062b7ef09f29.jpg" alt="only_axis_rect" /></p>
+<h3>详细配置</h3>
+<p>这里只列举出一些常用的属性，其他的可以翻阅<a href="https://echarts.apache.org/zh/option.html">配置文档</a>。</p>
+<p>这些配置里面有一个通用的设置<strong>lineStyle</strong>：</p>
+<ul>
+<li><strong>color</strong>：颜色支持<code>HEX</code>、<code>RGB</code>、<code>RGBA</code>格式。</li>
+<li><strong>width</strong>：线宽。</li>
+<li><strong>type</strong>：<code>"dashed"</code>、<code>"dotted"</code>、<code>"solid"</code> v5.x支持数字或数字数组来控制虚线类型如<code>[5,10]</code>会呈现5实线10虚线的轴线。</li>
+</ul>
+<h4>轴线</h4>
+<p>通过<code>yAxis</code>或<code>xAxis</code>下的<code>axisLine</code>属性配置。</p>
+<ul>
+<li>
+<p><strong>show</strong>(boolean)：显示或隐藏轴线。</p>
+</li>
+<li>
+<p><strong>symbol</strong>(String|Array)：设置轴线两头是否包含箭头，默认为<code>"none"</code>，也可以设置为<code>"arrow"</code>这时坐标轴两端都会有箭头出现，想要只有外侧出现箭头，需要设置为<code>["none", "arrow"]</code>。</p>
+</li>
+<li>
+<p><strong>symbolSize</strong>(Array)：设置箭头宽高，如：<code>[10,20]</code>，index0表示宽度为10，index1表示高度为20。</p>
+</li>
+<li>
+<p><strong>lineStyle</strong></p>
+</li>
+</ul>
+<h4>刻度</h4>
+<p>通过<code>yAxis</code>或<code>xAxis</code>下的<code>axisTick</code>属性配置。</p>
+<ul>
+<li><strong>alignWithLabel</strong>(boolean)：是否和标签居中对齐，默认为<code>false</code>，就是在标签的右侧。</li>
+<li><strong>interval</strong>(number)：设置隔几个标签显示一个刻度，会在你设置的数字上+1。</li>
+<li><strong>inside</strong>(boolean)：刻度线朝向，<code>true</code>为朝内，<code>false</code>为朝外，默认<code>false</code>。</li>
+<li><strong>length</strong>(number)：刻度线长度，可以非常非常长，超过图表。</li>
+<li><strong>lineStyle</strong></li>
+</ul>
+<h4>分割线</h4>
+<p>通过<code>yAxis</code>或<code>xAxis</code>下的<code>splitLine</code>配置</p>
+<ul>
+<li><strong>show</strong>(boolean)：是否显示分割线，type为<code>category</code>的分割线默认不显示。</li>
+<li><strong>interval</strong>(number)：设置隔几个标签显示一个分割线，会在你设置的数字上+1。</li>
+<li><strong>lineStyle</strong></li>
+</ul>
+<p>分割线数量：<code>yAxis</code>或<code>xAxis</code>下的<code>splitNumber</code>属性设置。</p>
+<h4>轴标签</h4>
+<p>通过<code>yAxis</code>或<code>xAxis</code>下的<code>axisLabel</code>属性设置：</p>
+<ul>
+<li><strong>show</strong>(boolean)：显示或隐藏，默认显示。</li>
+<li><strong>inside</strong>(boolean)：标签位置，默认<code>false</code>即标签在轴线外。</li>
+</ul>
+<p>所以想实现开头就提到的无座标轴柱状图，我们可以这样设置图表的配置项：</p>
+<div class="language-js"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">let </span><span style="color:#323232;">option </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">{
+</span></span><span class="line"><span style="color:#323232;">  xAxis: {
+</span></span><span class="line"><span style="color:#323232;">    type: </span><span style="color:#183691;">&#39;category&#39;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">    axisLabel:{
+</span></span><span class="line"><span style="color:#323232;">      show: </span><span style="color:#0086b3;">false </span><span style="font-style:italic;color:#969896;">// 隐藏坐标轴标签
+</span></span><span class="line"><span style="color:#323232;">    },
+</span></span><span class="line"><span style="color:#323232;">    axisLine:{
+</span></span><span class="line"><span style="color:#323232;">      show: </span><span style="color:#0086b3;">false </span><span style="font-style:italic;color:#969896;">// 隐藏轴线
+</span></span><span class="line"><span style="color:#323232;">    },
+</span></span><span class="line"><span style="color:#323232;">    axisTick:{
+</span></span><span class="line"><span style="color:#323232;">      show: </span><span style="color:#0086b3;">false </span><span style="font-style:italic;color:#969896;">// 隐藏刻度线
+</span></span><span class="line"><span style="color:#323232;">    },
+</span></span><span class="line"><span style="color:#323232;">    data: [</span><span style="color:#183691;">&#39;Mon&#39;</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;Tue&#39;</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;Wed&#39;</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;Thu&#39;</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;Fri&#39;</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;Sat&#39;</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;Sun&#39;</span><span style="color:#323232;">]
+</span></span><span class="line"><span style="color:#323232;">  },
+</span></span><span class="line"><span style="color:#323232;">  yAxis: {
+</span></span><span class="line"><span style="color:#323232;">    axisLabel:{
+</span></span><span class="line"><span style="color:#323232;">      show: </span><span style="color:#0086b3;">false
+</span></span><span class="line"><span style="color:#323232;">    },
+</span></span><span class="line"><span style="color:#323232;">    splitLine:{
+</span></span><span class="line"><span style="color:#323232;">      show: </span><span style="color:#0086b3;">false </span><span style="font-style:italic;color:#969896;">// 隐藏分割线
+</span></span><span class="line"><span style="color:#323232;">    },
+</span></span><span class="line"><span style="color:#323232;">    type: </span><span style="color:#183691;">&#39;value&#39;
+</span></span><span class="line"><span style="color:#323232;">  },
+</span></span><span class="line"><span style="color:#323232;">  series: [
+</span></span><span class="line"><span style="color:#323232;">    {
+</span></span><span class="line"><span style="color:#323232;">      data: [</span><span style="color:#0086b3;">120</span><span style="color:#323232;">, </span><span style="color:#0086b3;">200</span><span style="color:#323232;">, </span><span style="color:#0086b3;">150</span><span style="color:#323232;">, </span><span style="color:#0086b3;">80</span><span style="color:#323232;">, </span><span style="color:#0086b3;">70</span><span style="color:#323232;">, </span><span style="color:#0086b3;">110</span><span style="color:#323232;">, </span><span style="color:#0086b3;">130</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">      type: </span><span style="color:#183691;">&#39;bar&#39;
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">  ]
+</span></span><span class="line"><span style="color:#323232;">};
+</span></span></code></pre></div>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>

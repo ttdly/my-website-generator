@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>MMPretrain 实现 AUC 评价指标</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">MMPretrain 实现 AUC 评价指标</div>
+  <div class="info">
+    <ul>
+      <li>2024年09月16日</li>
+      <li>[最后更新：2024年09月24日]</li>
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/其他.html">其他</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <p>在使用 MMPretrain 训练模型的时候，发现其提供的指标中并没有 AUC 指标。但自己需要用到该指标，于是按照官方文档的指导，实现并在训练过程中使用了该指标。</p>
+<h2>官方文档对添加指标的说明</h2>
+<blockquote>
+<p>MMPretrain 支持为追求更高定制化的用户实现定制化的评估指标。</p>
+<p>您需要在 <code>mmpretrain/evaluation/metrics</code> 下创建一个新文件，并在该文件中实现新的指标，例如，在 <code>mmpretrain/evaluation/&gt;metrics/my_metric.py</code> 中。并创建一个自定义的评估指标类 <code>MyMetric</code> 继承 <a href="mmengine.%3Eevaluator.BaseMetric">MMEngine 中的 BaseMetric</a>。</p>
+<p>需要分别覆盖数据格式处理方法<code>process</code>和度量计算方法<code>compute_metrics</code>。 将其添加到“METRICS”注册表以实施任何自定义评估指标。</p>
+<div class="language-python"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">from </span><span style="color:#323232;">mmengine.evaluator </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">BaseMetric
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">from </span><span style="color:#323232;">mmpretrain.registry </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#0086b3;">METRICS
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">@METRICS.register_module()
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">MyMetric</span><span style="color:#323232;">(</span><span style="color:#0086b3;">BaseMetric</span><span style="color:#323232;">):
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">   </span><span style="font-weight:bold;color:#a71d5d;">def </span><span style="font-weight:bold;color:#323232;">process</span><span style="color:#323232;">(self, data_batch: Sequence[Dict], data_samples: Sequence[Dict]):
+</span></span><span class="line"><span style="color:#323232;">   </span><span style="font-style:italic;color:#969896;">&quot;&quot;&quot; The processed results should be stored in ``self.results``, which will
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">       be used to computed the metrics when all batches have been processed.
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">       `data_batch` stores the batch data from dataloader,
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">       and `data_samples` stores the batch outputs from model.
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">   &quot;&quot;&quot;
+</span></span><span class="line"><span style="color:#323232;">       </span><span style="color:#0086b3;">...
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">   </span><span style="font-weight:bold;color:#a71d5d;">def </span><span style="font-weight:bold;color:#323232;">compute_metrics</span><span style="color:#323232;">(self, results: List):
+</span></span><span class="line"><span style="color:#323232;">   </span><span style="font-style:italic;color:#969896;">&quot;&quot;&quot; Compute the metrics from processed results and returns the evaluation results.
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">   &quot;&quot;&quot;
+</span></span><span class="line"><span style="color:#323232;">       </span><span style="color:#0086b3;">...
+</span></span></code></pre></div>
+<p>然后，将其导入 <code>mmpretrain/evaluation/metrics/__init__.py</code> 以将其添加到 <code>mmpretrain.evaluation</code> 包中。</p>
+<div class="language-python"><button class="copy"></button><pre><code><span class="line"><span style="font-style:italic;color:#969896;"># In mmpretrain/evaluation/metrics/__init__.py
+</span></span><span class="line"><span style="color:#0086b3;">...
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">from .</span><span style="color:#323232;">my_metric </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">MyMetric
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">__all__ </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">[</span><span style="color:#0086b3;">...</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;MyMetric&#39;</span><span style="color:#323232;">]
+</span></span></code></pre></div>
+<p>最后，在配置文件的 <code>val_evaluator</code> 和 <code>test_evaluator</code> 字段中使用 <code>MyMetric</code>。</p>
+<div class="language-python"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">val_evaluator </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">dict</span><span style="color:#323232;">(type</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&#39;MyMetric&#39;</span><span style="color:#323232;">, </span><span style="color:#0086b3;">...</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">test_evaluator </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">val_evaluator
+</span></span></code></pre></div>
+<div class="language-{note}"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">更多的细节可以参考 {external+mmengine:doc}`MMEngine 文档: Evaluation &lt;design/evaluation&gt;`.
+</span></span></code></pre></div>
+</blockquote>
+<h2>错误尝试</h2>
+<p>按照文档指引，在 <code>mmpretrain/evaluation/metrics</code> 目录下创建新的文件 <code>auc.py</code></p>
+<div class="language-python"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">@METRICS.register_module()
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">SingleLabelAUC</span><span style="color:#323232;">(</span><span style="color:#0086b3;">BaseMetric</span><span style="color:#323232;">):
+</span></span><span class="line"><span style="color:#323232;">  default_prefix: Optional[</span><span style="color:#0086b3;">str</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&#39;auc&#39; </span><span style="font-style:italic;color:#969896;"># 在终端打印时的前缀，如 `compute_metrics` 中的字典是 {&#39;foo&#39;: 1, &#39;bar&#39;: 0.9}，前缀是 `bzz` 那么在打印结果的时候会显示 `bzz/foo: 1 bzz/bar: 0.9`
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">def </span><span style="font-weight:bold;color:#323232;">process</span><span style="color:#323232;">(self, data_batch, data_samples: Sequence[</span><span style="color:#0086b3;">dict</span><span style="color:#323232;">]) -&gt; </span><span style="color:#0086b3;">None</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;"># 这一函数将训练的结果存入 self.results 变量中
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">def </span><span style="font-weight:bold;color:#323232;">compute_metrics</span><span style="color:#323232;">(self, results: List) -&gt; </span><span style="color:#0086b3;">dict</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;"># 这一函数计算并返回评价指标，字典格式，返回的字典会在验证和测试的时候将所有的键值对输出到终端中
+</span></span></code></pre></div>
+<p><code>process</code> 函数的写法，参照 <code>mmpretrain/evaluation/metrics/single_label.py</code> 文件中的写法：</p>
+<div class="language-python"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">data_sample </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">data_samples:
+</span></span><span class="line"><span style="color:#323232;">    result </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">dict</span><span style="color:#323232;">()
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#183691;">&#39;pred_score&#39; </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">data_sample:
+</span></span><span class="line"><span style="color:#323232;">        result[</span><span style="color:#183691;">&#39;pred_score&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">data_sample[</span><span style="color:#183691;">&#39;pred_score&#39;</span><span style="color:#323232;">].cpu()
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">else</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">        result[</span><span style="color:#183691;">&#39;pred_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">data_sample[</span><span style="color:#183691;">&#39;pred_label&#39;</span><span style="color:#323232;">].cpu()
+</span></span><span class="line"><span style="color:#323232;">    result[</span><span style="color:#183691;">&#39;gt_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">data_sample[</span><span style="color:#183691;">&#39;gt_label&#39;</span><span style="color:#323232;">].cpu()
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;"># Save the result to `self.results`.
+</span></span><span class="line"><span style="color:#323232;">    self.results.append(result)
+</span></span></code></pre></div>
+<p>从这段方法不难看出，<code>process</code> 函数仅仅是将模型预测的结果与真实的标签存入 <code>self.results</code> 中，而计算 <code>auc</code> 也只需要这两个参数，所以在 <code>compute_metrics</code> 函数中，我们只需要读取这两个参数并计算。</p>
+<p>对于 <code>auc</code> 的计算，<code>scikit-learn</code> 库中已有<a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html#sklearn.metrics.roc_auc_score">现成的方法</a>，所以在实现 auc 的时候，直接调用该库的函数：</p>
+<div class="language-python"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">metrics </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">{}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">target </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">torch.cat([res[</span><span style="color:#183691;">&#39;gt_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">res </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results]) </span><span style="font-style:italic;color:#969896;"># 拼接所有的正确标签
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#183691;">&#39;pred_score&#39; </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results[</span><span style="color:#0086b3;">0</span><span style="color:#323232;">]:
+</span></span><span class="line"><span style="color:#323232;">    pred </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">torch.stack([res[</span><span style="color:#183691;">&#39;pred_score&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">res </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results]) </span><span style="font-style:italic;color:#969896;"># 拼接所有的预测结果
+</span></span><span class="line"><span style="color:#323232;">    auc </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">roc_auc_score(target, pred, average</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&#39;macro&#39;</span><span style="color:#323232;">, sample_weight</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">                        max_fpr</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">, multi_class</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&#39;ovr&#39;</span><span style="color:#323232;">, labels</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    metrics[</span><span style="color:#183691;">&#39;auc&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">auc
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">else</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;"># If only label in the `pred_label`.
+</span></span><span class="line"><span style="color:#323232;">    pred </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">torch.cat([res[</span><span style="color:#183691;">&#39;pred_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">res </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results]) </span><span style="font-style:italic;color:#969896;"># 拼接所有的预测结果
+</span></span><span class="line"><span style="color:#323232;">    auc </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">roc_auc_score(target, pred, average</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&#39;macro&#39;</span><span style="color:#323232;">, sample_weight</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">                        max_fpr</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">, multi_class</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&#39;ovr&#39;</span><span style="color:#323232;">, labels</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">    metrics[</span><span style="color:#183691;">&#39;auc&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">auc
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#323232;">metrics
+</span></span></code></pre></div>
+<p>在这个函数中，返回的字典键名没有特殊要求，可以随便写。</p>
+<p>写完这个类之后，我们需要在 <code>mmpretrain/evaluation/metrics/__init__.py</code> 中注册自定义的评价指标：</p>
+<div class="language-python"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">from .</span><span style="color:#323232;">auc </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">SingleLabelAUC
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">_all_ </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">[</span><span style="color:#0086b3;">...</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;SingleLabelAUC&#39;</span><span style="color:#323232;">]
+</span></span></code></pre></div>
+<p>最后在我们的训练配置文件添加如下配置：<code>val_evaluator = dict(type='SingleLabelAUC')</code></p>
+<p>测试的时候使用的是 <code>resnet18_8xb16_cifar10.py</code> 配置文件，能够输出运算的结果，完整的 <code>auc.py</code> 文件如下：</p>
+<div class="language-python"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">torch
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">from </span><span style="color:#323232;">mmengine.evaluator </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">BaseMetric
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">from </span><span style="color:#323232;">mmpretrain.registry </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#0086b3;">METRICS
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">from </span><span style="color:#323232;">sklearn.metrics </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">roc_auc_score
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">from </span><span style="color:#323232;">typing </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">List, Optional, Sequence, Any
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">@METRICS.register_module()
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">SingleLabelAUC</span><span style="color:#323232;">(</span><span style="color:#0086b3;">BaseMetric</span><span style="color:#323232;">):
+</span></span><span class="line"><span style="color:#323232;">    default_prefix: Optional[</span><span style="color:#0086b3;">str</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&#39;auc&#39;
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">def </span><span style="font-weight:bold;color:#323232;">process</span><span style="color:#323232;">(self, data_batch, data_samples: Sequence[</span><span style="color:#0086b3;">dict</span><span style="color:#323232;">]) -&gt; </span><span style="color:#0086b3;">None</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">data_sample </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">data_samples:
+</span></span><span class="line"><span style="color:#323232;">            result </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">dict</span><span style="color:#323232;">()
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#183691;">&#39;pred_score&#39; </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">data_sample:
+</span></span><span class="line"><span style="color:#323232;">                result[</span><span style="color:#183691;">&#39;pred_score&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">data_sample[</span><span style="color:#183691;">&#39;pred_score&#39;</span><span style="color:#323232;">].cpu()
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">else</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">                result[</span><span style="color:#183691;">&#39;pred_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">data_sample[</span><span style="color:#183691;">&#39;pred_label&#39;</span><span style="color:#323232;">].cpu()
+</span></span><span class="line"><span style="color:#323232;">            result[</span><span style="color:#183691;">&#39;gt_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">data_sample[</span><span style="color:#183691;">&#39;gt_label&#39;</span><span style="color:#323232;">].cpu()
+</span></span><span class="line"><span style="color:#323232;">            self.results.append(result)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">def </span><span style="font-weight:bold;color:#323232;">compute_metrics</span><span style="color:#323232;">(self, results: List) -&gt; </span><span style="color:#0086b3;">dict</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">        metrics </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">{}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-style:italic;color:#969896;"># concat
+</span></span><span class="line"><span style="color:#323232;">        target </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">torch.cat([res[</span><span style="color:#183691;">&#39;gt_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">res </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results])
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#183691;">&#39;pred_score&#39; </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results[</span><span style="color:#0086b3;">0</span><span style="color:#323232;">]:
+</span></span><span class="line"><span style="color:#323232;">            pred </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">torch.stack([res[</span><span style="color:#183691;">&#39;pred_score&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">res </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results])
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">            auc </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">roc_auc_score(target, pred, average</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&#39;macro&#39;</span><span style="color:#323232;">, sample_weight</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">                                max_fpr</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">, multi_class</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&#39;ovr&#39;</span><span style="color:#323232;">, labels</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">            metrics[</span><span style="color:#183691;">&#39;auc&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">auc
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">else</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">            pred </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">torch.cat([res[</span><span style="color:#183691;">&#39;pred_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">res </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results])
+</span></span><span class="line"><span style="color:#323232;">            auc </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">roc_auc_score(target, pred, average</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&#39;macro&#39;</span><span style="color:#323232;">, sample_weight</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">                                max_fpr</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">, multi_class</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&#39;ovr&#39;</span><span style="color:#323232;">, labels</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">None</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">            metrics[</span><span style="color:#183691;">&#39;auc&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">auc
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#323232;">metrics
+</span></span></code></pre></div>
+<h2>正确写法</h2>
+<p>在所有文件设置完成之后，进行了一次测试，发现该方法在 <code>acc=0.5</code> 的情况下，<code>auc</code> 达到了 <code>0.9</code>（训练时的第一次验证），不是很正常，于是放弃自己写的代码，直接复制 <code>SingleLabelMetric</code> 的代码，并替换一些关键算法：</p>
+<div class="language-python"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">torch
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">numpy </span><span style="font-weight:bold;color:#a71d5d;">as </span><span style="color:#323232;">np
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">torch.nn.functional </span><span style="font-weight:bold;color:#a71d5d;">as </span><span style="color:#323232;">F
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">from </span><span style="color:#323232;">mmengine.evaluator </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">BaseMetric
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">from </span><span style="color:#323232;">mmpretrain.registry </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#0086b3;">METRICS
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">from </span><span style="color:#323232;">sklearn.metrics </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">roc_auc_score
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">from </span><span style="color:#323232;">typing </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">List, Optional, Sequence, Union
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">from .</span><span style="color:#323232;">single_label </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#323232;">to_tensor
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">@METRICS.register_module()
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">class </span><span style="color:#0086b3;">SingleLabelAUC</span><span style="color:#323232;">(</span><span style="color:#0086b3;">BaseMetric</span><span style="color:#323232;">):
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    default_prefix: Optional[</span><span style="color:#0086b3;">str</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&#39;single-label&#39;
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">def </span><span style="font-weight:bold;color:#62a35c;">__init__</span><span style="color:#323232;">(self,
+</span></span><span class="line"><span style="color:#323232;">                 thrs: Union[</span><span style="color:#0086b3;">float</span><span style="color:#323232;">, Sequence[Union[</span><span style="color:#0086b3;">float</span><span style="color:#323232;">, </span><span style="color:#0086b3;">None</span><span style="color:#323232;">]], </span><span style="color:#0086b3;">None</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0.</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">                 average: Optional[</span><span style="color:#0086b3;">str</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&#39;macro&#39;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">                 num_classes: Optional[</span><span style="color:#0086b3;">int</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">None</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">                 collect_device: </span><span style="color:#0086b3;">str </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&#39;cpu&#39;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">                 prefix: Optional[</span><span style="color:#0086b3;">str</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">None</span><span style="color:#323232;">) -&gt; </span><span style="color:#0086b3;">None</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="color:#62a35c;">super</span><span style="color:#323232;">().</span><span style="color:#62a35c;">__init__</span><span style="color:#323232;">(collect_device</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">collect_device, prefix</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">prefix)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#62a35c;">isinstance</span><span style="color:#323232;">(thrs, </span><span style="color:#0086b3;">float</span><span style="color:#323232;">) </span><span style="font-weight:bold;color:#a71d5d;">or </span><span style="color:#323232;">thrs </span><span style="font-weight:bold;color:#a71d5d;">is </span><span style="color:#0086b3;">None</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">            self.thrs </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">(thrs, )
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">else</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">            self.thrs </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">tuple</span><span style="color:#323232;">(thrs)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">        self.average </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">average
+</span></span><span class="line"><span style="color:#323232;">        self.num_classes </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">num_classes
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">def </span><span style="font-weight:bold;color:#323232;">process</span><span style="color:#323232;">(self, data_batch, data_samples: Sequence[</span><span style="color:#0086b3;">dict</span><span style="color:#323232;">]):
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">data_sample </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">data_samples:
+</span></span><span class="line"><span style="color:#323232;">            result </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">dict</span><span style="color:#323232;">()
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#183691;">&#39;pred_score&#39; </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">data_sample:
+</span></span><span class="line"><span style="color:#323232;">                result[</span><span style="color:#183691;">&#39;pred_score&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">data_sample[</span><span style="color:#183691;">&#39;pred_score&#39;</span><span style="color:#323232;">].cpu()
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">else</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">                num_classes </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">self.num_classes </span><span style="font-weight:bold;color:#a71d5d;">or </span><span style="color:#323232;">data_sample.get(
+</span></span><span class="line"><span style="color:#323232;">                    </span><span style="color:#183691;">&#39;num_classes&#39;</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">                </span><span style="font-weight:bold;color:#a71d5d;">assert </span><span style="color:#323232;">num_classes </span><span style="font-weight:bold;color:#a71d5d;">is not </span><span style="color:#0086b3;">None</span><span style="color:#323232;">, \
+</span></span><span class="line"><span style="color:#323232;">                    </span><span style="color:#183691;">&#39;The `num_classes` must be specified if no `pred_score`.&#39;
+</span></span><span class="line"><span style="color:#323232;">                result[</span><span style="color:#183691;">&#39;pred_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">data_sample[</span><span style="color:#183691;">&#39;pred_label&#39;</span><span style="color:#323232;">].cpu()
+</span></span><span class="line"><span style="color:#323232;">                result[</span><span style="color:#183691;">&#39;num_classes&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">num_classes
+</span></span><span class="line"><span style="color:#323232;">            result[</span><span style="color:#183691;">&#39;gt_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">data_sample[</span><span style="color:#183691;">&#39;gt_label&#39;</span><span style="color:#323232;">].cpu()
+</span></span><span class="line"><span style="color:#323232;">            self.results.append(result)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">def </span><span style="font-weight:bold;color:#323232;">compute_metrics</span><span style="color:#323232;">(self, results: List):
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">        metrics </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">{}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-style:italic;color:#969896;"># concat
+</span></span><span class="line"><span style="color:#323232;">        target </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">torch.cat([res[</span><span style="color:#183691;">&#39;gt_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">res </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results])
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#183691;">&#39;pred_score&#39; </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results[</span><span style="color:#0086b3;">0</span><span style="color:#323232;">]:
+</span></span><span class="line"><span style="color:#323232;">            pred </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">torch.stack([res[</span><span style="color:#183691;">&#39;pred_score&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">res </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results])
+</span></span><span class="line"><span style="color:#323232;">            auc </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">self.calculate(
+</span></span><span class="line"><span style="color:#323232;">                pred, target, thrs</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">self.thrs, average</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">self.average)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">            multi_thrs </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">len</span><span style="color:#323232;">(self.thrs) </span><span style="font-weight:bold;color:#a71d5d;">&gt; </span><span style="color:#0086b3;">1
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">i, thr </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#62a35c;">enumerate</span><span style="color:#323232;">(self.thrs):
+</span></span><span class="line"><span style="color:#323232;">                </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">multi_thrs:
+</span></span><span class="line"><span style="color:#323232;">                    suffix </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&#39;auc_no-thr&#39; </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">thr </span><span style="font-weight:bold;color:#a71d5d;">is </span><span style="color:#0086b3;">None </span><span style="font-weight:bold;color:#a71d5d;">else f</span><span style="color:#183691;">&#39;_thr-</span><span style="color:#323232;">{thr</span><span style="color:#0086b3;">:.2f</span><span style="color:#323232;">}</span><span style="color:#183691;">&#39;
+</span></span><span class="line"><span style="color:#323232;">                </span><span style="font-weight:bold;color:#a71d5d;">else</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">                    suffix </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&#39;auc&#39;
+</span></span><span class="line"><span style="color:#323232;">                </span><span style="color:#62a35c;">print</span><span style="color:#323232;">(</span><span style="color:#62a35c;">type</span><span style="color:#323232;">(auc), auc)
+</span></span><span class="line"><span style="color:#323232;">                </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">k, v </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#62a35c;">enumerate</span><span style="color:#323232;">(auc):
+</span></span><span class="line"><span style="color:#323232;">                    </span><span style="color:#62a35c;">print</span><span style="color:#323232;">(k, v)
+</span></span><span class="line"><span style="color:#323232;">                    metrics[</span><span style="color:#0086b3;">str</span><span style="color:#323232;">(k)</span><span style="font-weight:bold;color:#a71d5d;">+</span><span style="color:#323232;">suffix] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">v
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">else</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">            pred </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">torch.cat([res[</span><span style="color:#183691;">&#39;pred_label&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">res </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">results])
+</span></span><span class="line"><span style="color:#323232;">            auc </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">self.calculate(
+</span></span><span class="line"><span style="color:#323232;">                pred,
+</span></span><span class="line"><span style="color:#323232;">                target,
+</span></span><span class="line"><span style="color:#323232;">                average</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">self.average,
+</span></span><span class="line"><span style="color:#323232;">                num_classes</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">results[</span><span style="color:#0086b3;">0</span><span style="color:#323232;">][</span><span style="color:#183691;">&#39;num_classes&#39;</span><span style="color:#323232;">])
+</span></span><span class="line"><span style="color:#323232;">            metrics[</span><span style="color:#183691;">&#39;auc&#39;</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">auc
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#323232;">metrics
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    @</span><span style="color:#62a35c;">staticmethod
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">def </span><span style="font-weight:bold;color:#323232;">calculate</span><span style="color:#323232;">(
+</span></span><span class="line"><span style="color:#323232;">        pred: Union[torch.Tensor, np.ndarray, Sequence],
+</span></span><span class="line"><span style="color:#323232;">        target: Union[torch.Tensor, np.ndarray, Sequence],
+</span></span><span class="line"><span style="color:#323232;">        thrs: Sequence[Union[</span><span style="color:#0086b3;">float</span><span style="color:#323232;">, </span><span style="color:#0086b3;">None</span><span style="color:#323232;">]] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">(</span><span style="color:#0086b3;">0.</span><span style="color:#323232;">, ),
+</span></span><span class="line"><span style="color:#323232;">        average: Optional[</span><span style="color:#0086b3;">str</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&#39;macro&#39;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">        num_classes: Optional[</span><span style="color:#0086b3;">int</span><span style="color:#323232;">] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">None</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">    ) -&gt; Union[torch.Tensor, List[torch.Tensor]]:
+</span></span><span class="line"><span style="color:#323232;">        average_options </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">[</span><span style="color:#183691;">&#39;micro&#39;</span><span style="color:#323232;">, </span><span style="color:#183691;">&#39;macro&#39;</span><span style="color:#323232;">, </span><span style="color:#0086b3;">None</span><span style="color:#323232;">]
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">assert </span><span style="color:#323232;">average </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">average_options, </span><span style="color:#183691;">&#39;Invalid `average` argument, &#39; </span><span style="color:#323232;">\
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">f</span><span style="color:#183691;">&#39;please specify from </span><span style="color:#323232;">{average_options}</span><span style="color:#183691;">.&#39;
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">        pred </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">to_tensor(pred)
+</span></span><span class="line"><span style="color:#323232;">        target </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">to_tensor(target).to(torch.int64)
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">assert </span><span style="color:#323232;">pred.size(</span><span style="color:#0086b3;">0</span><span style="color:#323232;">) </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#323232;">target.size(</span><span style="color:#0086b3;">0</span><span style="color:#323232;">), \
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">f</span><span style="color:#183691;">&quot;The size of pred (</span><span style="color:#323232;">{pred.size(</span><span style="color:#0086b3;">0</span><span style="color:#323232;">)}</span><span style="color:#183691;">) doesn&#39;t match &quot;</span><span style="color:#323232;">\
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">f</span><span style="color:#183691;">&#39;the target (</span><span style="color:#323232;">{target.size(</span><span style="color:#0086b3;">0</span><span style="color:#323232;">)}</span><span style="color:#183691;">).&#39;
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">pred.ndim </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">1</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">assert </span><span style="color:#323232;">num_classes </span><span style="font-weight:bold;color:#a71d5d;">is not </span><span style="color:#0086b3;">None</span><span style="color:#323232;">, \
+</span></span><span class="line"><span style="color:#323232;">                </span><span style="color:#183691;">&#39;Please specify the `num_classes` if the `pred` is labels &#39; </span><span style="color:#323232;">\
+</span></span><span class="line"><span style="color:#323232;">                </span><span style="color:#183691;">&#39;intead of scores.&#39;
+</span></span><span class="line"><span style="color:#323232;">            gt_positive </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">F.one_hot(target.flatten(), num_classes)
+</span></span><span class="line"><span style="color:#323232;">            pred_positive </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">F.one_hot(pred.to(torch.int64), num_classes)
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#323232;">roc_auc_score(gt_positive, pred_positive, ,
+</span></span><span class="line"><span style="color:#323232;">                                                average</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">average)
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">else</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-style:italic;color:#969896;"># For pred score, calculate on all thresholds.
+</span></span><span class="line"><span style="color:#323232;">            num_classes </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">pred.size(</span><span style="color:#0086b3;">1</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">            pred_score, pred_label </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">torch.topk(pred, k</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#0086b3;">1</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">            pred_score </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">pred_score.flatten()
+</span></span><span class="line"><span style="color:#323232;">            pred_label </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">pred_label.flatten()
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">            gt_positive </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">F.one_hot(target.flatten(), num_classes)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">            results </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">[]
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">thr </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">thrs:
+</span></span><span class="line"><span style="color:#323232;">                pred_positive </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">F.one_hot(pred_label, num_classes)
+</span></span><span class="line"><span style="color:#323232;">                </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">thr </span><span style="font-weight:bold;color:#a71d5d;">is not </span><span style="color:#0086b3;">None</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">                    pred_positive[pred_score </span><span style="font-weight:bold;color:#a71d5d;">&lt;= </span><span style="color:#323232;">thr] </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0
+</span></span><span class="line"><span style="color:#323232;">                results.append(
+</span></span><span class="line"><span style="color:#323232;">                    roc_auc_score(gt_positive, pred_positive, 
+</span></span><span class="line"><span style="color:#323232;">                                                 average</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">average))
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#323232;">results
+</span></span></code></pre></div>
+<p>经过再一次的实验，在其他条件同样的情况下，第一次训练验证时，auc 在 0.75 左右，符合预期。</p>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>

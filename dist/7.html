@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>NS-3 环境搭建</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">NS-3 环境搭建</div>
+  <div class="info">
+    <ul>
+      <li>2023年09月05日</li>
+      <li>[最后更新：2024年03月05日]</li>
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/ns-3.html">ns-3</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <h2>安装虚拟机</h2>
+<p>这里选用的是 VMware，当然其他工具也行，就是需要 Linux 这个环境。</p>
+<p>首先进入<a href="https://developer.aliyun.com/mirror/">阿里云镜像站</a>，选择 <code>Ubuntu 22.04</code> 镜像进行下载。</p>
+<p>下载完成之后随便选择一个不会被删掉的位置就行，下面就打开 VMware 创建新的虚拟机，非常简单，单击 <code>创建新虚拟机</code>  然后选择 <code>安装程序光盘映像文件</code>，在路径中选择刚刚下载的 Ubuntu 镜像。后面的步骤直接按照默认值，一直往下进行就行。</p>
+<h2>安装 NS-3 环境</h2>
+<p>这里选用 <code>3.35</code> 版本，可以在<a href="https://www.nsnam.org/releases/ns-3-35/">这里</a>进行下载 <code>all-in-one</code> 版本，这个装起来比较方便。</p>
+<p>首先，我们的虚拟机要做一些配置，为了稍后下载软件快一些，我们需要对 <code>apt</code> 的源替换为清华大学的源，Ubuntu 的清华源可以在<a href="https://mirrors.tuna.tsinghua.edu.cn/help/ubuntu/">这个网址</a>中查询到。查好对应版本的镜像源之后，我们需要修改 <code>/etc/apt/sources.list</code> 文件：</p>
+<div class="language-bash"><button class="copy"></button><pre><code><span class="line"><span style="font-style:italic;color:#969896;"># 首先复制一下源文件
+</span></span><span class="line"><span style="color:#323232;">cp /etc/apt/sources.list /etc/apt/sources.list.bak
+</span></span><span class="line"><span style="font-style:italic;color:#969896;"># 修改文件
+</span></span><span class="line"><span style="color:#323232;">vi /etc/apt/sources.list
+</span></span><span class="line"><span style="font-style:italic;color:#969896;"># 更新 apt 软件列表
+</span></span><span class="line"><span style="color:#323232;">sudo apt-get update
+</span></span></code></pre></div>
+<p>我们可以从 NS-3 的 <a href="https://www.nsnam.org/wiki/Installation#Ubuntu.2FDebian.2FMint">Wiki</a> 中找到，配置 <code>3.35</code> 版本的最低要求是需要安装 <code>g++</code> 和 <code>python</code> ：</p>
+<div class="language-bash"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">sudo apt install g++ python
+</span></span></code></pre></div>
+<p>安装之后就需要解压前面下载的 <code>ns-allinone-3.35.tar.bz2</code>：</p>
+<div class="language-bash"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">tar xjf ns-allinone-3.35.tar.bz2
+</span></span></code></pre></div>
+<p>进入 <code>ns-allinone-3.35</code> 目录，输入 <code>ls</code> 可以查看目录下有个 <code>build.py</code> 文件，我们执行：</p>
+<div class="language-bash"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">./build.py --enable-example --enable-test
+</span></span></code></pre></div>
+<p>接下来会看到编译过程，执行结束后会看到什么模块编译了，什么模块没有编译。如果想确认是否编译完成可以执行脚本：</p>
+<div class="language-bash"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">./waf --run hello-simulator
+</span></span></code></pre></div>
+<p>运行结束之后，会看到 <code>Hello Simulator</code> 的输出。</p>
+<h2>实体机 VSCode 配置</h2>
+<p>配置虚拟机的 ssh：</p>
+<div class="language-bash"><button class="copy"></button><pre><code><span class="line"><span style="font-style:italic;color:#969896;"># 安装 sshd
+</span></span><span class="line"><span style="color:#323232;">sudo apt-get install sshd
+</span></span><span class="line"><span style="font-style:italic;color:#969896;"># 启动服务
+</span></span><span class="line"><span style="color:#323232;">sudo service sshd start
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-style:italic;color:#969896;"># 如果 sshd 安装不上，请将 apt 源换成清华源试试
+</span></span><span class="line"><span style="font-style:italic;color:#969896;"># 仍然不行的话，将 sshd 换成 openssh-server
+</span></span><span class="line"><span style="color:#323232;">sudo apt-get install openssh-server
+</span></span></code></pre></div>
+<p>在实体机的 VSCode 上，安装 <code>Remote-SSH</code> 这个插件，然后进行连接配置，</p>
+<p><img src="https://github.com/ttdly/ttdly.github.io/assets/108915955/55c52cb9-dc2d-454c-8583-7245e30d0955" alt="image" /></p>
+<div class="language-txt"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">Host ns-3 # 主机名
+</span></span><span class="line"><span style="color:#323232;">    HostName 192.168.182.129 # 虚拟机 IP 地址
+</span></span><span class="line"><span style="color:#323232;">    User root # 要登录的用户
+</span></span></code></pre></div>
+<p>虚拟机的 ip 地址可以通过 <code>ip a</code> 得到。</p>
+<p>这里用 root 用户登录是因为不用超级用户权限登录的话，文件都会爆红出错。</p>
+<p>但是，我们尝试连接的时候，会出现 <code>Permission denied, please try again</code> 这样的提示，需要我们编辑 <code>/etc/ssh/sshd_config</code> 这个文件：</p>
+<div class="language-bash"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">vi /etc/ssh/sshd_config
+</span></span></code></pre></div>
+<p>找到 <code>PermitRootLogin</code> 字段，将其值改为 <code>yes</code>，重新 ssh 服务，再连接就可以连接上了。</p>
+<div class="language-bash"><button class="copy"></button><pre><code><span class="line"><span style="font-style:italic;color:#969896;"># 重新启动服务
+</span></span><span class="line"><span style="color:#323232;">sudo service sshd restart
+</span></span></code></pre></div>
+<p>最后，在 VSCode 中为虚拟机装上 C/C++ 智能提示插件，按 <code>F1</code> 找到 <code>C/C++ 编辑配置(JSON)</code> 在里面将 <code>includePath</code> 字段改为 <code>"${workspaceFolder}/build/**"</code> 这样在加载的时候快一些。配置成功之后，就能得到对代码的智能提示了。</p>
+<h3>自动登录</h3>
+<p>在使用的过程中发现，每次连接都需要输入密码，非常麻烦，所以去搜索了一下怎么自动连接，这是一个办法：
+在 Git Bash 下输入以下命令，<code>&lt;Username&gt;</code> 是连接的用户名（例如 <code>root</code>）<code>&lt;Server IP&gt;</code> 就是虚拟机的 IP （命令中不需要尖括号）</p>
+<div class="language-bash"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">ssh-copy-id -i ~/.ssh/id_rsa.pub </span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;">Username</span><span style="font-weight:bold;color:#a71d5d;">&gt;</span><span style="color:#323232;">@</span><span style="font-weight:bold;color:#a71d5d;">&lt;</span><span style="color:#323232;">Sever IP</span><span style="font-weight:bold;color:#a71d5d;">&gt;
+</span></span></code></pre></div>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>

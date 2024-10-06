@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>缺氧游戏中的电力系统</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">缺氧游戏中的电力系统</div>
+  <div class="info">
+    <ul>
+      <li>2024年05月05日</li>
+      <li>[最后更新：2024年05月05日]</li>
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/游戏.html">游戏</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <p>由于缺氧中的地图非常大，导致有时候连电线非常长，所以我想实现能够不用电线连接所有电器的模组。</p>
+<p>这篇文章仅是我对这方面代码阅读之后的记录。</p>
+<h2>电量管理组件</h2>
+<p>观察源码中所有消耗电力的建筑，发现在它们的 Def 中都会有 <code>RequiresPowerInput</code>​、<code>PowerInputOffset</code>​、<code>EnergyConsumptionWhenActive</code>​ 这三条属性，对这三条属性进行一个搜索，发现前两条主要是用在创建电力输入接口，在对<code>EnergyConsumptionWhenActive</code>​进行搜索时，最终是定位到了 <code>EnergyConsumer</code>​ 这个组件，通过阅读这个组件的源码，我们提取出一些比较关键的方法：</p>
+<ol>
+<li>
+<p>实例化时的方法：</p>
+<p>我们可以看到在实例化的时候首先将这个组件实例添加到 <code>EnergyConsumers</code>​ 这个组件库中，接着设定这个组件对应建筑的输入端口，然后再在游戏实例中的 <code>circuitManager</code>​ 和 <code>energySim</code>​ 添加该组件实例。相应地，在这个组件实例清理的时候在前面提到的三个列表中删除本实例。</p>
+<div class="language-csharp"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">protected </span><span style="color:#0086b3;">override </span><span style="color:#323232;">void OnSpawn(</span><span style="font-weight:bold;color:#b52a1d;">)</span><span style="color:#323232;"> {
+</span></span><span class="line"><span style="color:#323232;">  base.OnSpawn();
+</span></span><span class="line"><span style="color:#323232;">  Components.EnergyConsumers.Add(this);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#0086b3;">Building </span><span style="color:#323232;">component </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">GetComponent&lt;</span><span style="color:#0086b3;">Building</span><span style="color:#323232;">&gt;();
+</span></span><span class="line"><span style="color:#323232;">  PowerCell </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">component.GetPowerInputCell();
+</span></span><span class="line"><span style="color:#323232;">  Game.Instance.circuitManager.Connect(this);
+</span></span><span class="line"><span style="color:#323232;">  Game.Instance.energySim.AddEnergyConsumer(this);
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+</li>
+<li>
+<p>设置连接状态的方法：</p>
+<div class="language-csharp"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">public </span><span style="color:#0086b3;">virtual </span><span style="color:#323232;">void SetConnectionStatus(CircuitManager.ConnectionStatus connection_status</span><span style="font-weight:bold;color:#b52a1d;">)</span><span style="color:#323232;"> {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">switch </span><span style="color:#323232;">(connection_status) {
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">case </span><span style="color:#323232;">CircuitManager.ConnectionStatus.</span><span style="color:#0086b3;">NotConnected</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">      IsPowered </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">break</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">case </span><span style="color:#323232;">CircuitManager.ConnectionStatus.</span><span style="color:#0086b3;">Unpowered</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(IsPowered </span><span style="font-weight:bold;color:#a71d5d;">&amp;&amp; </span><span style="color:#323232;">GetComponent&lt;</span><span style="color:#0086b3;">Battery</span><span style="color:#323232;">&gt;() </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#0086b3;">null</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">        IsPowered </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">        circuitOverloadTime </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">6</span><span style="font-weight:bold;color:#a71d5d;">f</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">        PlayCircuitSound(</span><span style="color:#183691;">&quot;overdraw&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">      }
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">break</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">case </span><span style="color:#323232;">CircuitManager.ConnectionStatus.</span><span style="color:#0086b3;">Powered</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">!</span><span style="color:#323232;">IsPowered </span><span style="font-weight:bold;color:#a71d5d;">&amp;&amp; </span><span style="color:#323232;">circuitOverloadTime </span><span style="font-weight:bold;color:#a71d5d;">&lt;= </span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">f</span><span style="color:#323232;">) {
+</span></span><span class="line"><span style="color:#323232;">        IsPowered </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">true</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">        PlayCircuitSound(</span><span style="color:#183691;">&quot;powered&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">      }
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">break</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+</li>
+<li>
+<p>每200ms会执行一次的方法：</p>
+<div class="language-csharp"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">public </span><span style="color:#0086b3;">virtual </span><span style="color:#323232;">void EnergySim200ms(float dt</span><span style="font-weight:bold;color:#b52a1d;">)</span><span style="color:#323232;"> {
+</span></span><span class="line"><span style="color:#323232;">  CircuitID </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">Game.Instance.circuitManager.GetCircuitID(this);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">if </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">!</span><span style="color:#323232;">IsConnected) {
+</span></span><span class="line"><span style="color:#323232;">    IsPowered </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">false</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">  circuitOverloadTime </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">Mathf.Max(</span><span style="color:#0086b3;">0</span><span style="font-weight:bold;color:#a71d5d;">f</span><span style="color:#323232;">, circuitOverloadTime </span><span style="font-weight:bold;color:#a71d5d;">- </span><span style="color:#323232;">dt);
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+</li>
+</ol>
+<p>通过以上的阅读，我们没有发现 <code>EnergyConsumptionWhenActive</code>​ 被谁使用了，只是将这个数据传递到组件的属性中，但是我们可以发现这个组件应当受到 <code>circuitManager</code>​ 和 <code>energySim</code>​ 这两个实例化后的组件控制。所以可以往下继续阅读，就是 <code>CircuitManager</code>​ 和 <code>EnergySim</code>​</p>
+<p>​<code>EnergySim</code>​ 执行的方法比较简单，就是每帧都调用一次所有记录的用、存、发电设备的每帧需要调用的函数，这里暂时没有看到电力转移相关代码，基本是更新设备状态的相关操作。</p>
+<p>从名字来看，<code>CircuitManager</code>​ 是电力控制组件，通过阅读这个组件的源码，可以发现 <code>Sim200msLast</code>​ 是电网电力转移的关键，<code>Sim200msFirst</code>​ 是会对整个电路进行更新。</p>
+<h2>电路更新</h2>
+<p>在缺氧里电线建造的时候会向一个网格系统中添加当前格子的位置，互相连接的电线都会添加到一个电网中，<code>CircuitManager</code>​ 中的 <code>CircuitInfo</code>​ 会同步电网的更新，并将与电网相连的电力设备与电线添加到一个 <code>CircuitInfo</code>​ 中。</p>
+<h2>电力转移</h2>
+<p>在 <code>Sim200msLast</code>​ 中一共有 5 个 for 循环，我们来看一下这几个循环都干了什么</p>
+<p><strong>第一个循环</strong></p>
+<p>大致浏览一下，可以看到第一个循环中主要是计算当前电路中是否有可用电力以及电力数量，如果足够用电器消耗则会将电力转移给用电器。</p>
+<p><strong>第二个循环</strong></p>
+<p>为发电机、变压器、电池做优先级排序，并先给变压器充电后再给电池充电</p>
+<p><strong>第三个循环</strong></p>
+<p>将变压器中的电力转移到电池内</p>
+<p><strong>第四个循环</strong></p>
+<p>更新电池连接状态以及向统计数据报告当前发电机浪费的电力</p>
+<p><strong>第五个循环</strong></p>
+<p>更新电路过载状态</p>
+<p>而所有电力设备的电力产生、存储、消耗状态都由 <code>EnergySim</code> 来更新，所以想要实现开篇中的功能，只需要自己写相应的组件并实现设备接入功能就行。</p>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>

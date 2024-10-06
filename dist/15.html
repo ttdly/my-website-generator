@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>Rust 中 Syntect 如何自定义生成的 HTML 代码</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">Rust 中 Syntect 如何自定义生成的 HTML 代码</div>
+  <div class="info">
+    <ul>
+      <li>2024年09月25日</li>
+      
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/rust.html">rust</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <p>本文仅讨论自定义最终生成的 HTML 文本，如代码行是否用标签包含，code 标签外添加的 pre 标签怎么自定义样式，不包含自定义主题。</p>
+<p>在 <code>syntect</code> <a href="https://github.com/trishume/syntect/blob/master/examples/synhtml.rs">代码库提供的案例</a>中，将代码文件转成行内样式的 HTML 文本的实现如下：</p>
+<div class="language-rust"><button class="copy"></button><pre><code><span class="line"><span style="font-style:italic;color:#969896;">//! Prints highlighted HTML for a file to stdout.
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">//! Basically just wraps a body around `highlighted_html_for_file`
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">syntect::highlighting::{Color, ThemeSet};
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">syntect::html::highlighted_html_for_file;
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">syntect::parsing::SyntaxSet;
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() {
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> ss </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">SyntaxSet::load_defaults_newlines();
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> ts </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">ThemeSet::load_defaults();
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> args: Vec&lt;String&gt; </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">std::env::args().</span><span style="color:#62a35c;">collect</span><span style="color:#323232;">();
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">if</span><span style="color:#323232;"> args.</span><span style="color:#62a35c;">len</span><span style="color:#323232;">() </span><span style="font-weight:bold;color:#a71d5d;">&lt; </span><span style="color:#0086b3;">2 </span><span style="color:#323232;">{
+</span></span><span class="line"><span style="color:#323232;">        println!(</span><span style="color:#183691;">&quot;Please pass in a file to highlight&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">return</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> style </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&quot;
+</span></span><span class="line"><span style="color:#183691;">        pre {
+</span></span><span class="line"><span style="color:#183691;">            font-size:13px;
+</span></span><span class="line"><span style="color:#183691;">            font-family: Consolas, </span><span style="color:#0086b3;">\&quot;</span><span style="color:#183691;">Liberation Mono</span><span style="color:#0086b3;">\&quot;</span><span style="color:#183691;">, Menlo, Courier, monospace;
+</span></span><span class="line"><span style="color:#183691;">        }&quot;</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    println!(
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="color:#183691;">&quot;&lt;head&gt;&lt;title&gt;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&lt;/title&gt;&lt;style&gt;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&lt;/style&gt;&lt;/head&gt;&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">args[</span><span style="color:#0086b3;">1</span><span style="color:#323232;">], style
+</span></span><span class="line"><span style="color:#323232;">    );
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> theme </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span style="color:#323232;">ts.themes[</span><span style="color:#183691;">&quot;base16-ocean.dark&quot;</span><span style="color:#323232;">];
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> c </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> theme.settings.background.</span><span style="color:#62a35c;">unwrap_or</span><span style="color:#323232;">(Color::</span><span style="color:#0086b3;">WHITE</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">    println!(
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="color:#183691;">&quot;&lt;body style=</span><span style="color:#0086b3;">\&quot;</span><span style="color:#183691;">background-color:#</span><span style="color:#0086b3;">{:02x}{:02x}{:02x}</span><span style="color:#183691;">;</span><span style="color:#0086b3;">\&quot;</span><span style="color:#183691;">&gt;</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">        c.r, c.g, c.b
+</span></span><span class="line"><span style="color:#323232;">    );
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> html </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">highlighted_html_for_file</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">args[</span><span style="color:#0086b3;">1</span><span style="color:#323232;">], </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">ss, theme).</span><span style="color:#62a35c;">unwrap</span><span style="color:#323232;">();
+</span></span><span class="line"><span style="color:#323232;">    println!(</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">, html);
+</span></span><span class="line"><span style="color:#323232;">    println!(</span><span style="color:#183691;">&quot;&lt;/body&gt;&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+<p>阅读代码发现，大部分的代码是加载一些预设，然后输出模板，最终将代码文件转成 HTML 文本的代码是 <code>highlighted_html_for_file</code> 方法，经查看，该方法的<a href="https://docs.rs/syntect/latest/src/syntect/html.rs.html#296-318">源码</a>如下：</p>
+<div class="language-rust"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">highlighted_html_for_file</span><span style="color:#323232;">&lt;P: AsRef&lt;Path&gt;&gt;(
+</span></span><span class="line"><span style="color:#323232;">    path: P,
+</span></span><span class="line"><span style="color:#323232;">    ss: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">SyntaxSet,
+</span></span><span class="line"><span style="color:#323232;">    theme: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">Theme,
+</span></span><span class="line"><span style="color:#323232;">) -&gt; Result&lt;String, Error&gt; {
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> highlighter </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">HighlightFile::new(path, ss, theme)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">mut</span><span style="color:#323232;"> output, bg) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">start_highlighted_html_snippet</span><span style="color:#323232;">(theme);
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> line </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">String</span><span style="color:#323232;">::new();
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">while</span><span style="color:#323232;"> highlighter.reader.</span><span style="color:#62a35c;">read_line</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span style="color:#323232;"> line)</span><span style="font-weight:bold;color:#a71d5d;">? &gt; </span><span style="color:#0086b3;">0 </span><span style="color:#323232;">{
+</span></span><span class="line"><span style="color:#323232;">        {
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> regions </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> highlighter.highlight_lines.</span><span style="color:#62a35c;">highlight_line</span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">line, ss)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="color:#62a35c;">append_highlighted_html_for_styled_line</span><span style="color:#323232;">(
+</span></span><span class="line"><span style="color:#323232;">                </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">regions[</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">                IncludeBackground::IfDifferent(bg),
+</span></span><span class="line"><span style="color:#323232;">                </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span style="color:#323232;"> output,
+</span></span><span class="line"><span style="color:#323232;">            )</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">        }
+</span></span><span class="line"><span style="color:#323232;">        line.</span><span style="color:#62a35c;">clear</span><span style="color:#323232;">();
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">    output.</span><span style="color:#62a35c;">push_str</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;&lt;/pre&gt;</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="color:#0086b3;">Ok</span><span style="color:#323232;">(output)
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+<p>有同类型的方法 <code>highlighted_html_for_string</code> <a href="https://docs.rs/syntect/latest/src/syntect/html.rs.html#269-288">源码</a>如下：</p>
+<div class="language-rust"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">highlighted_html_for_string</span><span style="color:#323232;">(
+</span></span><span class="line"><span style="color:#323232;">    s: </span><span style="font-weight:bold;color:#a71d5d;">&amp;str</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">    ss: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">SyntaxSet,
+</span></span><span class="line"><span style="color:#323232;">    syntax: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">SyntaxReference,
+</span></span><span class="line"><span style="color:#323232;">    theme: </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">Theme,
+</span></span><span class="line"><span style="color:#323232;">) -&gt; Result&lt;String, Error&gt; {
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> highlighter </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">HighlightLines::new(syntax, theme);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let </span><span style="color:#323232;">(</span><span style="font-weight:bold;color:#a71d5d;">mut</span><span style="color:#323232;"> output, bg) </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">start_highlighted_html_snippet</span><span style="color:#323232;">(theme);
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span style="color:#323232;"> line </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">LinesWithEndings::from(s) {
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> regions </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> highlighter.</span><span style="color:#62a35c;">highlight_line</span><span style="color:#323232;">(line, ss)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="color:#62a35c;">append_highlighted_html_for_styled_line</span><span style="color:#323232;">(
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">regions[</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">            IncludeBackground::IfDifferent(bg),
+</span></span><span class="line"><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span style="color:#323232;"> output,
+</span></span><span class="line"><span style="color:#323232;">        )</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">    output.</span><span style="color:#62a35c;">push_str</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;&lt;/pre&gt;</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="color:#0086b3;">Ok</span><span style="color:#323232;">(output)
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+<p>对比可以发现，生成 HTML 文本主要的两个方法有：<code>highlighter.highlight_line</code> 和 <code>append_highlighted_html_for_styled_line</code>。那么我们就可以使用这两个方法自己来实现最终生成的 HTML 文本：</p>
+<div class="language-rust"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">pub mod </span><span style="color:#323232;">code_highlight{
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">syntect::easy::HighlightLines;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">syntect::Error;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">syntect::highlighting::ThemeSet;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">syntect::html::{append_highlighted_html_for_styled_line, IncludeBackground};
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">syntect::parsing::SyntaxSet;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">syntect::util::LinesWithEndings;
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">highlight</span><span style="color:#323232;">(code: </span><span style="font-weight:bold;color:#a71d5d;">&amp;str</span><span style="color:#323232;">, lang: </span><span style="font-weight:bold;color:#a71d5d;">&amp;str</span><span style="color:#323232;">) -&gt; Result&lt;String, Error&gt;{
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> ps </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">SyntaxSet::load_defaults_newlines();
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> ts </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">ThemeSet::load_defaults();
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> theme </span><span style="font-weight:bold;color:#a71d5d;">= &amp;</span><span style="color:#323232;">ts.themes[</span><span style="color:#183691;">&quot;InspiredGitHub&quot;</span><span style="color:#323232;">];
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> syntax </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> ps.</span><span style="color:#62a35c;">find_syntax_by_extension</span><span style="color:#323232;">(lang).</span><span style="color:#62a35c;">unwrap</span><span style="color:#323232;">();
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> highlighter </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">HighlightLines::new(syntax, theme);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> output </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">String</span><span style="color:#323232;">::from(</span><span style="color:#183691;">&quot;&lt;pre&gt;&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">for</span><span style="color:#323232;"> line </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">LinesWithEndings::from(code) {
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> regions </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> highlighter.</span><span style="color:#62a35c;">highlight_line</span><span style="color:#323232;">(line, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">ps)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">      </span><span style="color:#62a35c;">append_highlighted_html_for_styled_line</span><span style="color:#323232;">(
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">regions[</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">        IncludeBackground::No, </span><span style="font-style:italic;color:#969896;">// 不在代码标签中添加 `style:&quot;background-color: xxxx&quot;`
+</span></span><span class="line"><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span style="color:#323232;"> output,
+</span></span><span class="line"><span style="color:#323232;">      )</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">    output.</span><span style="color:#62a35c;">push_str</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;&lt;/pre&gt;</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="color:#0086b3;">Ok</span><span style="color:#323232;">(output)
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">#[cfg(test)]
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">mod </span><span style="color:#323232;">test{
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">syntect::highlighting::ThemeSet;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">use super</span><span style="color:#323232;">::code_highlight;
+</span></span><span class="line"><span style="color:#323232;">  #[test]
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">test_my_highlight</span><span style="color:#323232;">(){
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> result </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">code_highlight::highlight(</span><span style="color:#183691;">&quot;let a = 1 + 2;</span><span style="color:#0086b3;">\n</span><span style="color:#183691;">console.log(a)&quot;</span><span style="color:#323232;">, </span><span style="color:#183691;">&quot;js&quot;</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">      .</span><span style="color:#62a35c;">unwrap_or_else</span><span style="color:#323232;">(|_| </span><span style="color:#0086b3;">String</span><span style="color:#323232;">::from(</span><span style="color:#183691;">&quot;error&quot;</span><span style="color:#323232;">));
+</span></span><span class="line"><span style="color:#323232;">    print!(</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">, result)
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">  #[test]
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">traversal_theme</span><span style="color:#323232;">(){
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> ts </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">ThemeSet::load_defaults();
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">for </span><span style="color:#323232;">(name, _the) </span><span style="font-weight:bold;color:#a71d5d;">in</span><span style="color:#323232;"> ts.themes.</span><span style="color:#62a35c;">iter</span><span style="color:#323232;">(){
+</span></span><span class="line"><span style="color:#323232;">      println!(</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">, name)
+</span></span><span class="line"><span style="color:#323232;">    }
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+<p>运行 <code>test_my_highlight</code> 方法的结果为：</p>
+<div class="language-html"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">&lt;</span><span style="color:#63a35c;">pre</span><span style="color:#323232;">&gt;&lt;</span><span style="color:#63a35c;">span </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">font-weight</span><span style="color:#323232;">:bold;</span><span style="color:#0086b3;">color</span><span style="color:#323232;">:</span><span style="color:#ed6a43;">#a71d5d</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;let &lt;/</span><span style="color:#63a35c;">span</span><span style="color:#323232;">&gt;&lt;</span><span style="color:#63a35c;">span </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">color</span><span style="color:#323232;">:</span><span style="color:#ed6a43;">#323232</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;a &lt;/</span><span style="color:#63a35c;">span</span><span style="color:#323232;">&gt;&lt;</span><span style="color:#63a35c;">span </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">font-weight</span><span style="color:#323232;">:bold;</span><span style="color:#0086b3;">color</span><span style="color:#323232;">:</span><span style="color:#ed6a43;">#a71d5d</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;= &lt;/</span><span style="color:#63a35c;">span</span><span style="color:#323232;">&gt;&lt;</span><span style="color:#63a35c;">span </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">color</span><span style="color:#323232;">:</span><span style="color:#ed6a43;">#0086b3</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;1 &lt;/</span><span style="color:#63a35c;">span</span><span style="color:#323232;">&gt;&lt;</span><span style="color:#63a35c;">span </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">font-weight</span><span style="color:#323232;">:bold;</span><span style="color:#0086b3;">color</span><span style="color:#323232;">:</span><span style="color:#ed6a43;">#a71d5d</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;+ &lt;/</span><span style="color:#63a35c;">span</span><span style="color:#323232;">&gt;&lt;</span><span style="color:#63a35c;">span </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">color</span><span style="color:#323232;">:</span><span style="color:#ed6a43;">#0086b3</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;2&lt;/</span><span style="color:#63a35c;">span</span><span style="color:#323232;">&gt;&lt;</span><span style="color:#63a35c;">span </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">color</span><span style="color:#323232;">:</span><span style="color:#ed6a43;">#323232</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;;
+</span></span><span class="line"><span style="color:#323232;">&lt;/</span><span style="color:#63a35c;">span</span><span style="color:#323232;">&gt;&lt;</span><span style="color:#63a35c;">span </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">color</span><span style="color:#323232;">:</span><span style="color:#ed6a43;">#795da3</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;console&lt;/</span><span style="color:#63a35c;">span</span><span style="color:#323232;">&gt;&lt;</span><span style="color:#63a35c;">span </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">color</span><span style="color:#323232;">:</span><span style="color:#ed6a43;">#323232</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;.&lt;/</span><span style="color:#63a35c;">span</span><span style="color:#323232;">&gt;&lt;</span><span style="color:#63a35c;">span </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">color</span><span style="color:#323232;">:</span><span style="color:#ed6a43;">#0086b3</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;log&lt;/</span><span style="color:#63a35c;">span</span><span style="color:#323232;">&gt;&lt;</span><span style="color:#63a35c;">span </span><span style="color:#795da3;">style</span><span style="color:#323232;">=</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">color</span><span style="color:#323232;">:</span><span style="color:#ed6a43;">#323232</span><span style="color:#323232;">;</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">&gt;(a)&lt;/</span><span style="color:#63a35c;">span</span><span style="color:#323232;">&gt;&lt;/</span><span style="color:#63a35c;">pre</span><span style="color:#323232;">&gt;
+</span></span></code></pre></div>
+<blockquote>
+<p>这里的代码有多余的换行符，可以自行处理</p>
+</blockquote>
+<p>观察运行结果，不难发现可以通过修改 <code>output</code> 变量来实现想要的效果。如果想要在代码行外添加 <code>p</code> 标签，只需要在循环中加入文本即可：</p>
+<div class="language-rust"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">for</span><span style="color:#323232;"> line </span><span style="font-weight:bold;color:#a71d5d;">in </span><span style="color:#323232;">LinesWithEndings::from(code) {
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> regions </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> highlighter.</span><span style="color:#62a35c;">highlight_line</span><span style="color:#323232;">(line, </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">ps)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  output.</span><span style="color:#62a35c;">push_str</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;&lt;p&gt;&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#62a35c;">append_highlighted_html_for_styled_line</span><span style="color:#323232;">(
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">&amp;</span><span style="color:#323232;">regions[</span><span style="font-weight:bold;color:#a71d5d;">..</span><span style="color:#323232;">],
+</span></span><span class="line"><span style="color:#323232;">    IncludeBackground::No,
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">&amp;mut</span><span style="color:#323232;"> output,
+</span></span><span class="line"><span style="color:#323232;">  )</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span></span><span class="line"><span style="color:#323232;">  output.</span><span style="color:#62a35c;">push_str</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;&lt;/p&gt;&quot;</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+<p>对于代码高亮的主题，  <code>syntect</code> 中的默认主题包中包含如下主题：</p>
+<div class="language-text"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">InspiredGitHub
+</span></span><span class="line"><span style="color:#323232;">Solarized (dark)
+</span></span><span class="line"><span style="color:#323232;">Solarized (light)
+</span></span><span class="line"><span style="color:#323232;">base16-eighties.dark
+</span></span><span class="line"><span style="color:#323232;">base16-mocha.dark
+</span></span><span class="line"><span style="color:#323232;">base16-ocean.dark
+</span></span><span class="line"><span style="color:#323232;">base16-ocean.light
+</span></span></code></pre></div>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>

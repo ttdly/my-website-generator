@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>用JavaScript创建GitHub Action</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">用JavaScript创建GitHub Action</div>
+  <div class="info">
+    <ul>
+      <li>2023年03月31日</li>
+      <li>[最后更新：2023年05月15日]</li>
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/github.html">github</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <h2>初始化</h2>
+<p>首先创建一个仓库</p>
+<div class="language-shell"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">git init
+</span></span></code></pre></div>
+<p>然后，初始化项目</p>
+<div class="language-shell"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">npm init
+</span></span></code></pre></div>
+<p>接着安装相关依赖 <a href="https://github.com/actions/toolkit/tree/main/packages/core">@actions/core</a>  <a href="https://github.com/actions/toolkit/tree/main/packages/github">@actions/github</a><br />
+其他的工具包在<a href="https://github.com/actions/toolkit">这里</a><br />
+但是想用GitHub API的话就不用安装octokit了，因为<code>@actions/github</code>已经封装好了这个包。</p>
+<div class="language-shell"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">npm install -D @actions/core @actions/github
+</span></span></code></pre></div>
+<h2>配置文件</h2>
+<p>新建<code>action.yml</code></p>
+<div class="language-yaml"><button class="copy"></button><pre><code><span class="line"><span style="color:#63a35c;">name</span><span style="color:#323232;">: </span><span style="color:#183691;">&#39;say hello&#39;
+</span></span><span class="line"><span style="color:#63a35c;">description</span><span style="color:#323232;">: </span><span style="color:#183691;">&#39;test for GitHub Actions!&#39;
+</span></span><span class="line"><span style="font-style:italic;color:#969896;"># 需要输入的字段
+</span></span><span class="line"><span style="color:#63a35c;">inputs</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-style:italic;color:#969896;"># 输入字段名称
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#63a35c;">name</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;"># 字段描述
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="color:#63a35c;">description</span><span style="color:#323232;">: </span><span style="color:#183691;">&#39;name&#39;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;"># 默认值 
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="color:#63a35c;">default</span><span style="color:#323232;">: </span><span style="color:#183691;">&#39;ttdly&#39;
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;"># 是否必须
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="color:#63a35c;">required</span><span style="color:#323232;">: </span><span style="color:#0086b3;">true
+</span></span><span class="line"><span style="font-style:italic;color:#969896;"># 需要输出的字段
+</span></span><span class="line"><span style="color:#63a35c;">outputs</span><span style="color:#323232;">: 
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#63a35c;">hello</span><span style="color:#323232;">: 
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="color:#63a35c;">description</span><span style="color:#323232;">: </span><span style="color:#183691;">&#39;say hello&#39;
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#63a35c;">runs</span><span style="color:#323232;">:
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#63a35c;">using</span><span style="color:#323232;">: </span><span style="color:#183691;">&#39;node16&#39;
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="color:#63a35c;">main</span><span style="color:#323232;">: </span><span style="color:#183691;">&#39;index.js&#39;
+</span></span></code></pre></div>
+<p>关于<code>action.yml</code>的语法，可以参考<a href="https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions#outputs-for-docker-container-and-javascript-actions">官方文档</a>，但是上面俩字段基本够用了。</p>
+<h2>编写&amp;本地测试</h2>
+<p>新建js入口文件<code>index.js</code>，可以是任何名称，但是<code>runs.mian.&lt;name&gt;</code>字段一定要和入口文件名字一致</p>
+<h3>输入输出</h3>
+<div class="language-javascript"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#323232;">core </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">require(</span><span style="color:#183691;">&#39;@actions/core&#39;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#323232;">github </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">require(</span><span style="color:#183691;">&#39;@actions/github&#39;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#323232;">core </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">require(</span><span style="color:#183691;">&#39;@actions/core&#39;</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">async function </span><span style="font-weight:bold;color:#795da3;">run</span><span style="color:#323232;">(){
+</span></span><span class="line"><span style="color:#323232;">  </span><span style="font-weight:bold;color:#a71d5d;">try </span><span style="color:#323232;">{
+</span></span><span class="line"><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#323232;">name </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">core.getInput(</span><span style="color:#183691;">&#39;name&#39;</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">    core.setOutput(</span><span style="color:#183691;">&#39;hello&#39;</span><span style="color:#323232;">, </span><span style="color:#183691;">`Hello </span><span style="color:#323232;">${name}</span><span style="color:#183691;">`</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#323232;">  } </span><span style="font-weight:bold;color:#a71d5d;">catch </span><span style="color:#323232;">(err) {
+</span></span><span class="line"><span style="color:#323232;">    core.setFailed(err.message)
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span><span class="line"><span style="color:#323232;">
+</span></span><span class="line"><span style="color:#323232;">run()
+</span></span></code></pre></div>
+<p>可以看的出来，平时Javascript怎么写，这里就能怎么写，只是输入输出方式不一样，这里列举一下输出的类型：</p>
+<ul>
+<li>core.info()</li>
+<li>core.debug()</li>
+<li>core.warning()</li>
+<li>core.notice()</li>
+<li>core.error()</li>
+</ul>
+<h3>结合GitHub API</h3>
+<p>虽然在执行工作流的时候，<code>github context</code>提供了许多信息，但是也并不包含有关事件的所有信息，这时就要用到GitHub API来获取一些额外的数据。<br />
+通过以下步骤获取到可以直接执行graphql查询的工具：</p>
+<div class="language-javascript"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#323232;">github </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">require(</span><span style="color:#183691;">&#39;@actions/github&#39;</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#323232;">octokit </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">github.getOctokit(token)
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#323232;">graphqlWithAuth </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">octokit.graphql
+</span></span></code></pre></div>
+<p>然后编写查询语句，这里简单一些，获取当前登录用户的名称：</p>
+<div class="language-graphql"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">query {
+</span></span><span class="line"><span style="color:#323232;">  viewer{
+</span></span><span class="line"><span style="color:#323232;">    login 
+</span></span><span class="line"><span style="color:#323232;">  }
+</span></span><span class="line"><span style="color:#323232;">}
+</span></span></code></pre></div>
+<p>较为复杂的语句建议在<a href="https://docs.github.com/en/graphql/overview/explorer">官方工具</a>中编写。
+执行查询语句，获取数据：</p>
+<div class="language-javascript"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#323232;">data </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">await graphqlWithAuth(</span><span style="color:#183691;">`
+</span></span><span class="line"><span style="color:#183691;">query {
+</span></span><span class="line"><span style="color:#183691;">  viewer{
+</span></span><span class="line"><span style="color:#183691;">    login 
+</span></span><span class="line"><span style="color:#183691;">  }
+</span></span><span class="line"><span style="color:#183691;">}
+</span></span><span class="line"><span style="color:#183691;">`</span><span style="color:#323232;">)
+</span></span><span class="line"><span style="color:#795da3;">console</span><span style="color:#323232;">.</span><span style="color:#0086b3;">log</span><span style="color:#323232;">(</span><span style="color:#183691;">&#39;login:&#39;</span><span style="color:#323232;">,data.data.viewer.login)
+</span></span></code></pre></div>
+<p>注意，在执行graphql查询时，如果需要在查询语句中传递参数，官方建议是这么写的。（代码摘自<a href="https://github.com/octokit/graphql.js">octokit/graphql.js</a>）</p>
+<div class="language-javascript"><button class="copy"></button><pre><code><span class="line"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#323232;">{ graphql } </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">require(</span><span style="color:#183691;">&quot;@octokit/graphql&quot;</span><span style="color:#323232;">);
+</span></span><span class="line"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#323232;">{ lastIssues } </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">await graphql({
+</span></span><span class="line"><span style="color:#323232;">  query: </span><span style="color:#183691;">`query lastIssues($owner: String!, $repo: String!, $num: Int = 3) {
+</span></span><span class="line"><span style="color:#183691;">    repository(owner:$owner, name:$repo) {
+</span></span><span class="line"><span style="color:#183691;">      issues(last:$num) {
+</span></span><span class="line"><span style="color:#183691;">        edges {
+</span></span><span class="line"><span style="color:#183691;">          node {
+</span></span><span class="line"><span style="color:#183691;">            title
+</span></span><span class="line"><span style="color:#183691;">          }
+</span></span><span class="line"><span style="color:#183691;">        }
+</span></span><span class="line"><span style="color:#183691;">      }
+</span></span><span class="line"><span style="color:#183691;">    }
+</span></span><span class="line"><span style="color:#183691;">  }`</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">  owner: </span><span style="color:#183691;">&quot;octokit&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">  repo: </span><span style="color:#183691;">&quot;graphql.js&quot;</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">  headers: {
+</span></span><span class="line"><span style="color:#323232;">    authorization: </span><span style="color:#183691;">`token secret123`</span><span style="color:#323232;">,
+</span></span><span class="line"><span style="color:#323232;">  },
+</span></span><span class="line"><span style="color:#323232;">});
+</span></span></code></pre></div>
+<p>也就是你需要传递的参数也得放在请求里面，而不是用模板字符拼接，因为用模板字符拼接可能会遭受注入攻击。而且也更方便进行一些递归查询。</p>
+<h3>本地测试</h3>
+<p>目前我知道的，比较专业的action测试是<a href="https://github.com/nektos/act">act</a>，不过也没了解过，我是通过修改环境变量的方式来进行本地测试的。</p>
+<h4>input</h4>
+<p>对于利用Javascript来创建的GitHub Actions，<code>action.yml</code>中的input字段，会在运行时转换成INPUT_XXX并且空格会转换成<code>_</code>。例如你的input字段是<code>time</code>，那存储在环境变量里面的就会是<code>INPUT_TIME</code>字段，可以设置process.env[‘INPUT_TIME’]=10来模拟输入。</p>
+<h4>context</h4>
+<p>context中的字段在process.env中的字段，基本就是GITHUB_XXX（该字段的upperCase），驼峰命名使用<code>_</code>连接，如eventName就是<code>process.env.GITHUB_EVENT_NAME</code>。<br />
+但是payload比较特殊，需要给<code>process.env.GITHUB_EVENT_PATH</code>设置一个json文件的文件路径，内容就是Action执行的上下文，也就是<a href="https://docs.github.com/en/actions/learn-github-actions/contexts#github-context">github context</a>中的内容。</p>
+<p>基本上这些数据就能够进行一些简单的流程测试。</p>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>

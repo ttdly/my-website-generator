@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/github-markdown-light.css">
+<link rel="stylesheet" href="assets/custom.css">
+    <title>Echarts - 提示框组件</title>
+</head>
+<body>
+    <div class="page-nav"><ul><li><a href="&#x2F;">首页</a></li><li><a href="&#x2F;post.html">记录</a></li><li><a href="&#x2F;archive.html">归档</a></li><li><a href="&#x2F;about.html">关于</a></li></ul></div>
+<div class="head-block">
+  <div class="title">Echarts - 提示框组件</div>
+  <div class="info">
+    <ul>
+      <li>2023年05月19日</li>
+      <li>[最后更新：2023年05月19日]</li>
+      
+    </ul>
+    <ul>
+      <li><a class="label-link" href="/labels/echarts.html">echarts</a></li> 
+    </ul>
+  </div>
+</div>
+<div class="markdown-body">
+  <p>当图表数据计量过大，图形过于密集的话，单凭肉眼是很难一眼就看出数据量的，所以使用Echarts图表的过程中，tooltip也是一个非常重要的组件。下面就来看看它的用法，看看怎么和数据联动，实现各种各样的提示框。</p>
+<p>在option中，添加<code>tooltip:{show:true}</code>就能够开启提示框组件的显示了，不过这时候你可能还是看不到提示框的显示，这是因为，需要设置触发方式才能顺利显示提示框。需要在<code>tooltip</code>配置项中添加<code>trigger:&lt;triggerName&gt;</code>，一共有三种类型：<code>"item"</code>（主要用在没有坐标轴的图表）、<code>"axis"</code>（用在有坐标轴的图表）、<code>"none"</code>（不触发）；默认的触发事件是<code>mousemove</code>，也就是鼠标移动过去的时候它就会显示，移出消失，可以通过设置<code>tooltip.triggerOn = 'click'</code>设置为鼠标左键单击显示，除非设置过延迟隐藏，或者是鼠标移出图表dom范围，否则这个提示框会一直停留。它大体上可以分为两个部分，即坐标轴指示器和浮框。下面会大致介绍一些关于这两个组件的设置。</p>
+<h2><a href="https://echarts.apache.org/zh/option.html#tooltip.axisPointer">坐标轴指示器</a></h2>
+<p>坐标轴指示器可以通过<code>tootip.axisPointer</code>进行设置，也可以直接通过<code>axisPointer</code>进行全局设置。</p>
+<p>坐标轴指示器的类型可以通过<code>tooltip.axisPointer.type</code>进行以下设置：</p>
+<p><code>"line"</code>
+<img src="https://github.com/ttdly/ttdly.github.io/assets/108915955/c46ac5ec-bab5-4ff7-82ea-491f65dc84b3" alt="tooltip_line" /></p>
+<p>设置为类型为line之后，可以通过<a href="https://echarts.apache.org/zh/option.html#tooltip.axisPointer.lineStyle">lineStyle</a>设置样式，但是cross不行。</p>
+<p><code>"shadow"</code>
+<img src="https://github.com/ttdly/ttdly.github.io/assets/108915955/54893176-3ec3-4f39-8a6d-af7715c9606d" alt="tooltip_shadow" />
+设置为shadow之后，可以通过<a href="https://echarts.apache.org/zh/option.html#tooltip.axisPointer.shadowStyle">shadowStyle</a>设置样式。</p>
+<p><code>"cross"</code>
+<img src="https://github.com/ttdly/ttdly.github.io/assets/108915955/3139dd98-c7fd-4a75-89d6-ab5936d4ed87" alt="tooltip_cross" />
+设置为cross之后，可以通过<a href="https://echarts.apache.org/zh/option.html#tooltip.axisPointer.crossStyle">crossStyle</a>设置样式。</p>
+<p><code>"none"</code>即不进行任何提示。</p>
+<h3>指示器标签</h3>
+<p>通过<code>tooltip.axisPointer.label</code>进行设置，设置<code>show = true</code>显示标签之后，会在坐标轴通过设定的格式进行坐标轴文本的高亮显示，默认会这样显示：
+<img src="https://github.com/ttdly/ttdly.github.io/assets/108915955/9bc56750-00dc-438b-b6fd-1155b4b7e190" alt="tooltip_label" /></p>
+<p>详细配置可以看看<a href="https://echarts.apache.org/zh/option.html#tooltip.axisPointer.label">官方文档</a>。</p>
+<p>剩下的一些配置都是这个指示器的动画设置。</p>
+<h2>浮框层</h2>
+<p><img src="https://github.com/ttdly/ttdly.github.io/assets/108915955/83284017-4ea2-415e-b8c7-6ddf524d5ea9" alt="tootip_content" />
+浮框层可以将鼠标所选区域的数据通过文本显示出来，如果只需要指示器效果，而不需要浮框层的显示，可以在tooltip下配置<code>showContent = false</code>不显示这个浮框层，默认浮框层是会鼠标离开图标后隐藏，隐藏的延迟通过<code>hideDelay</code>属性进行设置，单位是毫秒，同样也可以设置触发提示框组件之后延迟多久显示浮框层，通过<code>showDelay</code>进行设置。</p>
+<h3>交互</h3>
+<p>默认情况下，浮框层的位置始终会跟随鼠标，有时候我们的图标dom大小没有留足够的空间，浮框层在边界被截断了，会产生显示不全的现象，这样就需要设置<code>confine = true</code>来使得浮框层能够一直在图表dom内显示。当然，也可以固定浮框层的位置：</p>
+<p>通过数组的形式，设置浮框层左上角相对于图表左上角的位置：<code>[1,1]</code>是固定距离，距离图表左侧1px，上侧1px；<code>[50%,50%]</code>是处于图表中间（注意是左上角处于图表中间，并不是浮框层的中心点对准图表中心点）。</p>
+<p>当你的<code>trigger</code>参数设置为<code>"item"</code>时，你可以对position进行相对于item的设置即：<code>"inside"</code>、<code>"top"</code>、<code>"left"</code>、<code>"right"</code>、<code>"bottom"</code>对于这个浮框层的位置，可以参考下图：
+<img src="https://github.com/ttdly/ttdly.github.io/assets/108915955/5c702145-616d-40f4-99f9-98427007f566" alt="content_position" /></p>
+<p>有时，我们想要在浮框层里面进行一些交互设计，默认情况下鼠标是很难做到进入浮框层内的，这时候通过设置<code>tooltip. enterable ​</code>就能够很轻松地在任何情况下让鼠标进入浮框层进行交互了。</p>
+<h3>渲染</h3>
+<p>echarts图表的渲染模式有两种模式，一种是svg一种是canvas，但是浮框层可以设置为html格式，通过<code>tooltip.renderMode = "html"</code>进行设置，如果设置了html渲染模式的话，就可以通过<code>tooltip.className</code>设置该html节点的类名。同时，由于html模式渲染出的组件默认是包括在图表根节点内，所以当图表根节点设置了overflow: hidden的时候，渲染出来的浮框层即使是设置了confine属性，也有可能显示不全，所以官方提供了<code>tootip.appendToBody = true</code>这个选项来使得浮框层是直属body的元素，一定程度上解决了显示不全的情况。</p>
+<p>对于浮框层的文本，文本的样式可以通过<code>tooltip.textStyle</code>选项设置，文本显示格式可以通过<code>tooltip.formatter</code>控制，对于文本中数值的处理，通过<code>tooltip.valueFormatter</code>进行设置，参数是需要提供一个处理函数：</p>
+<div class="language-javascript"><button class="copy"></button><pre><code><span class="line"><span style="color:#323232;">(value) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#323232;">value.toFixed(</span><span style="color:#0086b3;">1</span><span style="color:#323232;">)</span><span style="font-weight:bold;color:#a71d5d;">+ </span><span style="color:#183691;">&#39;℃&#39;
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">// 传入36
+</span></span><span class="line"><span style="font-style:italic;color:#969896;">// 输出36.0℃
+</span></span></code></pre></div>
+<p>对于浮框层本身，可配置的属性有<code>backgroundColor</code>、<code>borderWidth</code>、<code>borderColor</code>、<code>padding</code>但是对于长度的话，不需要额外添加单位；基本上和css的属性配置是一样的，但是<code>padding</code>的速记形式不可以像css那样设置，顺序是一样的，但是需要套个数组，如<code>[5,10]</code>就是上下内边距5px，左右内边距10px。如果想要设置额外的css属性，需要通过设置<code>tooltip.extraCssText</code>进行添加，就像写html行内样式一样。</p>
+<p>到这里，对于echarts的提示框组件基本介绍完毕，可以见得我们能够通过一系列的设置，设计出我们想要的提示框组件。</p>
+
+</div>
+</body>
+<script src="assets/codeCopy.js"></script>
+</html>
